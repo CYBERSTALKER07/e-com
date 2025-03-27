@@ -301,18 +301,18 @@ const CheckoutForm: React.FC = () => {
               />
             </div>
             
-            <div className="flex justify-end">
+{/*             <div className="flex justify-end">
               <button
                 type="submit"
                 className="bg-primary text-white py-2 px-6 rounded-md hover:bg-primary-dark transition-colors"
               >
                 Продолжить к оплате
               </button>
-            </div>
+            </div> */}
           </form>
         )}
 
-        {currentStep === 1 && (
+{/*         {currentStep === 1 && (
           <form onSubmit={handleBillingSubmit}>
             <h2 className="text-lg font-medium text-gray-900 mb-6">Платежная информация</h2>
             
@@ -356,7 +356,7 @@ const CheckoutForm: React.FC = () => {
                     onChange={(e) => setBillingAddress({...billingAddress, streetAddress: e.target.value})}
                     required
                   />
-                </div>
+                </div> */}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
