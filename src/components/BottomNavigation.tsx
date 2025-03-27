@@ -12,7 +12,7 @@ const BottomNavigation: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white rounded-tl-[50px] rounded-tr-[50px] border-gray-200 md:hidden z-50">
       <div className="flex items-center justify-around h-16">
         <Link 
           to="/" 

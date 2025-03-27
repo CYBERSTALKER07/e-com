@@ -13,7 +13,7 @@ const BottomNavigation: React.FC = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="mx-auto max-w-md bg-[#6B4423] rounded-full shadow-lg">
+      <div className="mx-auto max-w-md bg-[#6B4423] rounded-tl-[50px] rounded-tr-[50px] shadow-lg">
         <div className="flex items-center justify-around h-16">
           <Link 
             to="/" 
