@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Truck, CheckCircle } from 'lucide-react';
+import { Truck, CheckCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useOrder } from '../../context/OrderContext';
 import { ShippingAddress, BillingAddress } from '../../types';
 
-const steps = ['Доставка', 'Оплата', 'Подтверждение'];
+const steps = ['Доставка', 'Подтверждение'];
 
 const CheckoutForm: React.FC = () => {
   const navigate = useNavigate();
   const { cart, totalPrice, clearCart } = useCart();
   const { createOrder } = useOrder();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [orderComplete, setOrderComplete] = useState(false);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [orderComplete, setOrderComplete] = useState<boolean>(false);
   const [orderId, setOrderId] = useState<string | null>(null);
 
   // Form state
@@ -35,9 +35,8 @@ const CheckoutForm: React.FC = () => {
     country: ''
   });
 
-  const [sameAsShipping, setSameAsShipping] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('credit-card');
-  const [email, setEmail] = useState('');
+  const [sameAsShipping, setSameAsShipping] = useState<boolean>(true);
+  const [email, setEmail] = useState<string>('');
 
   // Shipping cost and tax calculation
   const shippingCost = totalPrice > 100 ? 0 : 10;
@@ -59,28 +58,28 @@ const CheckoutForm: React.FC = () => {
     }
   };
 
-  const handleBillingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentStep(2);
-  };
-
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handleConfirmationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Create the order
-    const order = createOrder(
+    const order = await createOrder(
       shippingAddress.fullName,
       email,
       cart,
       shippingAddress,
       billingAddress,
-      paymentMethod,
+      'credit-card', // Assuming a default payment method
       orderTotal
     );
-    
-    setOrderId(order.id);
-    setOrderComplete(true);
-    clearCart();
+
+    if (order) {
+      setOrderId(order.id);
+      setOrderComplete(true);
+      clearCart();
+    } else {
+      // Handle the case where the order creation failed
+      console.error("Order creation failed");
+    }
   };
 
   const handleSameAsShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,232 +305,22 @@ const CheckoutForm: React.FC = () => {
                 type="submit"
                 className="bg-primary text-white py-2 px-6 rounded-md hover:bg-primary-dark transition-colors"
               >
-                Продолжить к оплате
-              </button>
-            </div>
-          </form>
-        )}
-
-        {currentStep === 1 && (
-          <form onSubmit={handleBillingSubmit}>
-            <h2 className="text-lg font-medium text-gray-900 mb-6">Платежная информация</h2>
-            
-            <div className="mb-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                  checked={sameAsShipping}
-                  onChange={handleSameAsShippingChange}
-                />
-                <span className="ml-2 text-sm text-gray-700">Совпадает с адресом доставки</span>
-              </label>
-            </div>
-            
-            {!sameAsShipping && (
-              <>
-                <div className="mb-4">
-                  <label htmlFor="billingFullName" className="block text-sm font-medium text-gray-700 mb-1">
-                    ФИО
-                  </label>
-                  <input
-                    type="text"
-                    id="billingFullName"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    value={billingAddress.fullName}
-                    onChange={(e) => setBillingAddress({...billingAddress, fullName: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label htmlFor="billingStreetAddress" className="block text-sm font-medium text-gray-700 mb-1">
-                    Адрес
-                  </label>
-                  <input
-                    type="text"
-                    id="billingStreetAddress"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    value={billingAddress.streetAddress}
-                    onChange={(e) => setBillingAddress({...billingAddress, streetAddress: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label htmlFor="billingCity" className="block text-sm font-medium text-gray-700 mb-1">
-                      Город
-                    </label>
-                    <input
-                      type="text"
-                      id="billingCity"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      value={billingAddress.city}
-                      onChange={(e) => setBillingAddress({...billingAddress, city: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="billingState" className="block text-sm font-medium text-gray-700 mb-1">
-                      Область / Регион
-                    </label>
-                    <input
-                      type="text"
-                      id="billingState"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      value={billingAddress.state}
-                      onChange={(e) => setBillingAddress({...billingAddress, state: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label htmlFor="billingPostalCode" className="block text-sm font-medium text-gray-700 mb-1">
-                      Почтовый индекс
-                    </label>
-                    <input
-                      type="text"
-                      id="billingPostalCode"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      value={billingAddress.postalCode}
-                      onChange={(e) => setBillingAddress({...billingAddress, postalCode: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="billingCountry" className="block text-sm font-medium text-gray-700 mb-1">
-                      Страна
-                    </label>
-                    <input
-                      type="text"
-                      id="billingCountry"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      value={billingAddress.country}
-                      onChange={(e) => setBillingAddress({...billingAddress, country: e.target.value})}
-                      required
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-            
-            <div className="flex justify-between">
-              <button
-                type="button"
-                className="border border-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-50 transition-colors"
-                onClick={() => setCurrentStep(0)}
-              >
-                Назад
-              </button>
-              <button
-                type="submit"
-                className="bg-primary text-white py-2 px-6 rounded-md hover:bg-primary-dark transition-colors"
-              >
                 Продолжить к подтверждению
               </button>
             </div>
           </form>
         )}
 
-        {currentStep === 2 && (
-          <form onSubmit={handlePaymentSubmit}>
-            <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
-              <CreditCard className="h-5 w-5 mr-2 text-primary" />
-              Способ оплаты
-            </h2>
+        {currentStep === 1 && (
+          <form onSubmit={handleConfirmationSubmit}>
+            <h2 className="text-lg font-medium text-gray-900 mb-6">Подтверждение заказа</h2>
             
-            <div className="mb-6">
-              <div className="space-y-4">
-                <label className="flex items-center p-4 border border-gray-300 rounded-md cursor-pointer hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="credit-card"
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                    checked={paymentMethod === 'credit-card'}
-                    onChange={() => setPaymentMethod('credit-card')}
-                  />
-                  <span className="ml-3">
-                    <span className="block text-sm font-medium text-gray-900">Кредитная карта</span>
-                    <span className="block text-sm text-gray-500">Оплата картами Visa, Mastercard или American Express</span>
-                  </span>
-                </label>
-                
-                <label className="flex items-center p-4 border border-gray-300 rounded-md cursor-pointer hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="paypal"
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                    checked={paymentMethod === 'paypal'}
-                    onChange={() => setPaymentMethod('paypal')}
-                  />
-                  <span className="ml-3">
-                    <span className="block text-sm font-medium text-gray-900">PayPal</span>
-                    <span className="block text-sm text-gray-500">Оплата через аккаунт PayPal</span>
-                  </span>
-                </label>
-              </div>
+            <div className="mb-4">
+              <p className="text-gray-700">ФИО: {shippingAddress.fullName}</p>
+              <p className="text-gray-700">Email: {email}</p>
+              <p className="text-gray-700">Адрес доставки: {shippingAddress.streetAddress}, {shippingAddress.city}, {shippingAddress.state}, {shippingAddress.postalCode}, {shippingAddress.country}</p>
+              <p className="text-gray-700">Номер телефона: {shippingAddress.phone}</p>
             </div>
-            
-            {paymentMethod === 'credit-card' && (
-              <div className="mb-6 space-y-4">
-                <div>
-                  <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    Номер карты
-                  </label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                      Срок действия
-                    </label>
-                    <input
-                      type="text"
-                      id="expiryDate"
-                      placeholder="ММ/ГГ"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="cvv" className="block text-sm font-medium text-gray-700 mb-1">
-                      CVV
-                    </label>
-                    <input
-                      type="text"
-                      id="cvv"
-                      placeholder="123"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="nameOnCard" className="block text-sm font-medium text-gray-700 mb-1">
-                    Имя на карте
-                  </label>
-                  <input
-                    type="text"
-                    id="nameOnCard"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-                    required
-                  />
-                </div>
-              </div>
-            )}
             
             <div className="border-t border-gray-200 pt-6 mb-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Сводка заказа</h3>
@@ -563,7 +352,7 @@ const CheckoutForm: React.FC = () => {
               <button
                 type="button"
                 className="border border-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-50 transition-colors"
-                onClick={() => setCurrentStep(1)}
+                onClick={() => setCurrentStep(0)}
               >
                 Назад
               </button>
