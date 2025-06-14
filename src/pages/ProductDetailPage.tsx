@@ -1,173 +1,181 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, ArrowLeft, Plus, Minus, Check } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Plus, Minus, Check, Store } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
-import { products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import ProductGrid from '../components/Products/ProductGrid';
+import { Product } from '../types';
+import { supabase } from '../lib/supabase';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
 
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [storeProducts, setStoreProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [store, setStore] = useState<{ name: string; description: string | null } | null>(null);
   
-  const product = products.find(p => p.id === id);
-  
-  // Get related products (same category, excluding current product)
-  const relatedProducts = product 
-    ? products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4)
-    : [];
-
   useEffect(() => {
-    // Reset state when product changes
-    setQuantity(1);
-    setAddedToCart(false);
-    
-    // Scroll to top when navigating between products
-    window.scrollTo(0, 0);
+    const fetchProduct = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch product with store information
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .select(`
+            *,
+            stores:store_id (
+              name,
+              description,
+              is_active
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (productError) throw productError;
+        if (!productData) throw new Error('Product not found');
+
+        setProduct(productData);
+        setStore(productData.stores);
+
+        // Fetch other products from the same store
+        const { data: storeProducts, error: storeError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('store_id', productData.store_id)
+          .neq('id', id)
+          .limit(4);
+
+        if (storeError) throw storeError;
+        setStoreProducts(storeProducts || []);
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchProduct();
+      setQuantity(1);
+      setAddedToCart(false);
+      window.scrollTo(0, 0);
+    }
   }, [id]);
 
   const handleAddToCart = () => {
     if (product) {
       addToCart(product, quantity);
       setAddedToCart(true);
-      
-      // Reset the "Added to cart" message after 3 seconds
-      setTimeout(() => {
-        setAddedToCart(false);
-      }, 3000);
+      setTimeout(() => setAddedToCart(false), 3000);
     }
   };
 
-  const increaseQuantity = () => {
-    setQuantity(prev => prev + 1);
-  };
+  const increaseQuantity = () => setQuantity(prev => prev + 1);
+  const decreaseQuantity = () => setQuantity(prev => prev > 1 ? prev - 1 : 1);
 
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
-  };
+  if (isLoading) return (
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <LoadingSpinner />
+      </div>
+    </Layout>
+  );
 
-  if (!product) {
-    return (
-      <Layout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Товар не найден</h1>
-          <p className="text-gray-600 mb-8">Товар, который вы ищете, не существует или был удален.</p>
-          <Link
-            to="/products"
-            className="inline-flex items-center text-primary hover:text-primary-dark"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Вернуться к товарам
-          </Link>
-        </div>
-      </Layout>
-    );
-  }
+  if (!product || !store) return (
+    <Layout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Товар не найден</h1>
+        <Link to="/products" className="text-primary hover:text-primary-dark">
+          Вернуться к товарам
+        </Link>
+      </div>
+    </Layout>
+  );
 
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-8">
-          <ol className="flex items-center space-x-2 text-sm text-gray-500">
-            <li>
-              <Link to="/" className="hover:text-primary">Главная</Link>
-            </li>
-            <li>
-              <span className="mx-2">/</span>
-            </li>
-            <li>
-              <Link to="/products" className="hover:text-primary">Товары</Link>
-            </li>
-            <li>
-              <span className="mx-2">/</span>
-            </li>
-            <li>
-              <Link 
-                to={`/products?category=${product.category}`} 
-                className="hover:text-primary capitalize"
-              >
-                {product.category}
-              </Link>
-            </li>
-            <li>
-              <span className="mx-2">/</span>
-            </li>
-            <li className="text-gray-900 font-medium truncate">{product.name}</li>
-          </ol>
-        </nav>
+        <div className="mb-6">
+          <Link to="/products" className="inline-flex items-center text-gray-600 hover:text-primary">
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Назад к товарам
+          </Link>
+        </div>
 
-        {/* Product Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {/* Product Image */}
-          <div className="bg-white rounded-lg overflow-hidden shadow-md">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* Product Info */}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-            <p className="text-xl font-bold text-primary mb-4">${product.price.toFixed(2)}</p>
-            
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Описание</h2>
-              <p className="text-gray-600">{product.description}</p>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+            {/* Product Image */}
+            <div className="aspect-w-1 aspect-h-1">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-center object-cover rounded-lg"
+              />
             </div>
-            
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Характеристики</h2>
-              <div className="bg-gray-50 rounded-md p-4">
-                <dl className="space-y-2">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-gray-500">{key}</dt>
-                      <dd className="text-sm text-gray-900 col-span-2">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
+
+            {/* Product Info */}
+            <div>
+              {/* Store Info */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Store className="h-5 w-5 text-gray-600 mr-2" />
+                  <h3 className="text-lg font-medium text-gray-900">{store.name}</h3>
+                </div>
+                {store.description && (
+                  <p className="text-gray-600 text-sm">{store.description}</p>
+                )}
               </div>
-            </div>
-            
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Количество</h2>
-              <div className="flex items-center">
+
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">{product.name}</h1>
+              <p className="text-3xl font-bold text-primary mb-6">
+                ${product.price.toFixed(2)}
+              </p>
+              
+              <p className="text-gray-600 mb-6">{product.description}</p>
+
+              {/* Specifications */}
+              {Object.entries(product.specifications).length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Характеристики</h3>
+                  <dl className="grid grid-cols-1 gap-2">
+                    {Object.entries(product.specifications).map(([key, value]) => (
+                      <div key={key} className="flex border-b border-gray-200 py-2">
+                        <dt className="w-1/3 text-gray-500">{key}:</dt>
+                        <dd className="w-2/3 text-gray-900">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+
+              {/* Quantity Selector */}
+              <div className="flex items-center mb-6">
+                <span className="mr-4 text-gray-700">Количество:</span>
                 <button
-                  type="button"
-                  className="p-2 border border-gray-300 rounded-l-md text-gray-600 hover:bg-gray-100"
                   onClick={decreaseQuantity}
+                  className="p-2 border rounded-l hover:bg-gray-50"
                 >
-                  <Minus className="h-5 w-5" />
+                  <Minus className="h-4 w-4" />
                 </button>
-                <span className="px-4 py-2 border-t border-b border-gray-300 text-center min-w-[3rem]">
-                  {quantity}
-                </span>
+                <span className="px-4 py-2 border-t border-b">{quantity}</span>
                 <button
-                  type="button"
-                  className="p-2 border border-gray-300 rounded-r-md text-gray-600 hover:bg-gray-100"
                   onClick={increaseQuantity}
+                  className="p-2 border rounded-r hover:bg-gray-50"
                 >
-                  <Plus className="h-5 w-5" />
+                  <Plus className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+
+              {/* Add to Cart Button */}
               <button
-                type="button"
-                className={`flex-1 flex items-center justify-center px-6 py-3 rounded-md font-medium transition-colors ${
-                  addedToCart
-                    ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-primary text-white hover:bg-primary-dark'
-                }`}
                 onClick={handleAddToCart}
+                className={`w-full flex items-center justify-center px-6 py-3 rounded-md text-white 
+                  ${addedToCart ? 'bg-green-500' : 'bg-primary hover:bg-primary-dark'} transition-colors`}
               >
                 {addedToCart ? (
                   <>
@@ -181,21 +189,17 @@ const ProductDetailPage: React.FC = () => {
                   </>
                 )}
               </button>
-              <Link
-                to="/products"
-                className="flex-1 flex items-center justify-center px-6 py-3 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-              >
-                Продолжить покупки
-              </Link>
             </div>
           </div>
         </div>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Похожие товары</h2>
-            <ProductGrid products={relatedProducts} />
+        {/* Other Products from Store */}
+        {storeProducts.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              Другие товары из {store.name}
+            </h2>
+            <ProductGrid products={storeProducts} />
           </div>
         )}
       </div>

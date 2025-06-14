@@ -66,6 +66,12 @@ const Navbar: React.FC = () => {
               </Link>
             )}
 
+            {isAuthenticated && (
+              <Link to="/stores" className="text-gray-700 hover:text-primary px-3 py-2 rounded-md font-medium">
+                Мой магазин
+              </Link>
+            )}
+
             <Link to="/cart" className="relative text-gray-700 hover:text-primary p-2">
               <ShoppingCart className="h-6 w-6" />
               {totalItems > 0 && (
@@ -165,6 +171,16 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Админ
+              </Link>
+            )}
+
+            {isAuthenticated && (
+              <Link 
+                to="/stores" 
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Мой магазин
               </Link>
             )}
 

@@ -3,8 +3,10 @@ import { useLocation } from 'react-router-dom';
 import Layout from '../components/Layout/Layout';
 import ProductGrid from '../components/Products/ProductGrid';
 import ProductFilter from '../components/Products/ProductFilter';
-import { products, categories } from '../data/products';
 import { Product } from '../types';
+import { supabase } from '../lib/supabase';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 const ProductsPage: React.FC = () => {
   const location = useLocation();
@@ -12,88 +14,119 @@ const ProductsPage: React.FC = () => {
   const searchQuery = queryParams.get('search');
   const categoryParam = queryParams.get('category');
 
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryParam);
+  const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
 
-  // Find the maximum price in the product list
-  const maxPrice = Math.max(...products.map(product => product.price));
-
+  // Fetch products from all active stores
   useEffect(() => {
-    // Simulate loading
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      let result = [...products];
-      
-      // Apply search filter if provided
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        result = result.filter(product => 
-          product.name.toLowerCase().includes(query) || 
-          product.description.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query)
-        );
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch active stores first
+        const { data: storesData, error: storesError } = await supabase
+          .from('stores')
+          .select('id, name')
+          .eq('is_active', true);
+
+        if (storesError) throw storesError;
+        setStores(storesData || []);
+
+        // Fetch products from active stores
+        const { data, error } = await supabase
+          .from('products')
+          .select(`
+            *,
+            stores:store_id (
+              name,
+              is_active
+            )
+          `)
+          .eq('stores.is_active', true);
+
+        if (error) throw error;
+
+        const validProducts = data.filter(product => product.stores !== null);
+        setProducts(validProducts);
+        
+        // Extract unique categories
+        const uniqueCategories = Array.from(new Set(validProducts.map(p => p.category)));
+        setCategories(uniqueCategories);
+
+        // Set initial price range based on actual product prices
+        const prices = validProducts.map(p => p.price);
+        const maxPrice = Math.max(...prices, 0);
+        setPriceRange([0, maxPrice]);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        toast.error('Не удалось загрузить товары');
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Apply category filter if selected
-      if (selectedCategory) {
-        result = result.filter(product => product.category === selectedCategory);
-      }
-      
-      // Apply price range filter
-      result = result.filter(product => 
-        product.price >= priceRange[0] && product.price <= priceRange[1]
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Filter products based on search, category, store, and price range
+  useEffect(() => {
+    let filtered = [...products];
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query)
       );
-      
-      setFilteredProducts(result);
-      setIsLoading(false);
-    }, 500); // Simulate network delay
-  }, [searchQuery, selectedCategory, priceRange]);
+    }
 
-  const handleCategoryChange = (category: string | null) => {
-    setSelectedCategory(category);
-  };
+    if (selectedCategory) {
+      filtered = filtered.filter(product => product.category === selectedCategory);
+    }
 
-  const handlePriceRangeChange = (range: [number, number]) => {
-    setPriceRange(range);
-  };
+    if (selectedStore) {
+      filtered = filtered.filter(product => product.store_id === selectedStore);
+    }
+
+    filtered = filtered.filter(product =>
+      product.price >= priceRange[0] && product.price <= priceRange[1]
+    );
+
+    setFilteredProducts(filtered);
+  }, [products, searchQuery, selectedCategory, selectedStore, priceRange]);
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar with filters */}
-          <div className="w-full md:w-64 flex-shrink-0">
+          <aside className="md:w-64">
             <ProductFilter
               categories={categories}
               selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
+              onCategoryChange={setSelectedCategory}
               priceRange={priceRange}
-              onPriceRangeChange={handlePriceRangeChange}
-              maxPrice={maxPrice}
+              onPriceRangeChange={setPriceRange}
+              maxPrice={Math.max(...products.map(p => p.price))}
+              stores={stores}
+              selectedStore={selectedStore}
+              onStoreChange={setSelectedStore}
             />
-          </div>
+          </aside>
 
-          {/* Main content */}
-          <div className="flex-1">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {selectedCategory 
-                  ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} товары`
-                  : searchQuery
-                  ? `Результаты поиска для "${searchQuery}"`
-                  : 'Все товары'}
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {filteredProducts.length} {filteredProducts.length === 1 ? 'товар' : 
-                  filteredProducts.length >= 2 && filteredProducts.length <= 4 ? 'товара' : 'товаров'} найдено
+          <main className="flex-1">
+            {searchQuery && (
+              <p className="mb-4 text-gray-600">
+                Результаты поиска для: "{searchQuery}"
               </p>
-            </div>
+            )}
             
             <ProductGrid products={filteredProducts} isLoading={isLoading} />
-          </div>
+          </main>
         </div>
       </div>
     </Layout>

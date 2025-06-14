@@ -8,6 +8,9 @@ interface ProductFilterProps {
   priceRange: [number, number];
   onPriceRangeChange: (range: [number, number]) => void;
   maxPrice: number;
+  stores?: { id: string; name: string }[];
+  selectedStore?: string | null;
+  onStoreChange?: (storeId: string | null) => void;
 }
 
 const ProductFilter: React.FC<ProductFilterProps> = ({
@@ -16,7 +19,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   onCategoryChange,
   priceRange,
   onPriceRangeChange,
-  maxPrice
+  maxPrice,
+  stores,
+  selectedStore,
+  onStoreChange
 }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -34,9 +40,26 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
     onPriceRangeChange([priceRange[0], value]);
   };
 
+  const handlePriceChange = (index: number, value: number) => {
+    const newRange: [number, number] = [...priceRange] as [number, number];
+    newRange[index] = value;
+
+    // Ensure min <= max
+    if (index === 0 && value > newRange[1]) {
+      newRange[1] = value;
+    } else if (index === 1 && value < newRange[0]) {
+      newRange[0] = value;
+    }
+
+    onPriceRangeChange(newRange);
+  };
+
   const clearFilters = () => {
     onCategoryChange(null);
     onPriceRangeChange([0, maxPrice]);
+    if (onStoreChange) {
+      onStoreChange(null);
+    }
   };
 
   return (
@@ -90,6 +113,33 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                       onClick={() => handleCategoryClick(category)}
                     >
                       {category}
+                    </button>
+                  ))}
+                </div>
+
+                <h3 className="text-sm font-medium text-gray-900 mt-6 mb-2">Магазины</h3>
+                <div className="space-y-2">
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      selectedStore === null
+                        ? 'bg-primary-light text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                    onClick={() => onStoreChange(null)}
+                  >
+                    Все
+                  </button>
+                  {stores?.map(store => (
+                    <button
+                      key={store.id}
+                      className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
+                        selectedStore === store.id
+                          ? 'bg-primary-light text-white'
+                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                      onClick={() => onStoreChange(store.id)}
+                    >
+                      {store.name}
                     </button>
                   ))}
                 </div>
@@ -198,6 +248,35 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                   onClick={() => handleCategoryClick(category)}
                 >
                   {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Магазины</h4>
+            <div className="space-y-2">
+              <button
+                className={`px-3 py-1 rounded-full text-sm ${
+                  selectedStore === null
+                    ? 'bg-primary-light text-white'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
+                onClick={() => onStoreChange(null)}
+              >
+                Все
+              </button>
+              {stores?.map(store => (
+                <button
+                  key={store.id}
+                  className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
+                    selectedStore === store.id
+                      ? 'bg-primary-light text-white'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                  }`}
+                  onClick={() => onStoreChange(store.id)}
+                >
+                  {store.name}
                 </button>
               ))}
             </div>

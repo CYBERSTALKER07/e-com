@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import ImageUpload from './ImageUpload';
+import { useStore } from '../../context/StoreContext';
 
 interface AdminProductFormProps {
   product: Product | null;
@@ -9,11 +10,13 @@ interface AdminProductFormProps {
 }
 
 const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, onCancel }) => {
+  const { userStores } = useStore();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState('');
   const [category, setCategory] = useState('');
+  const [storeId, setStoreId] = useState('');
   const [specifications, setSpecifications] = useState<Record<string, string>>({});
   const [specKey, setSpecKey] = useState('');
   const [specValue, setSpecValue] = useState('');
@@ -27,8 +30,12 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, on
       setImage(product.image);
       setCategory(product.category);
       setSpecifications(product.specifications);
+      setStoreId(product.store_id);
+    } else if (userStores.length === 1) {
+      // If user has only one store, select it automatically
+      setStoreId(userStores[0].id);
     }
-  }, [product]);
+  }, [product, userStores]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -41,6 +48,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, on
     if (!description.trim()) newErrors.description = 'Описание обязательно';
     if (!image.trim()) newErrors.image = 'Изображение обязательно';
     if (!category.trim()) newErrors.category = 'Категория обязательна';
+    if (!storeId) newErrors.store = 'Выберите магазин';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -58,6 +66,7 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, on
       description,
       image,
       category,
+      store_id: storeId,
       specifications,
     };
     
@@ -93,6 +102,27 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, on
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 gap-6">
+        {userStores.length > 0 && (
+          <div>
+            <label htmlFor="store" className="block text-sm font-medium text-gray-700 mb-1">
+              Магазин
+            </label>
+            <select
+              id="store"
+              className={`w-full border ${errors.store ? 'border-red-500' : 'border-gray-300'} rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary`}
+              value={storeId}
+              onChange={(e) => setStoreId(e.target.value)}
+              disabled={userStores.length === 1}
+            >
+              <option value="">Выберите магазин</option>
+              {userStores.map(store => (
+                <option key={store.id} value={store.id}>{store.name}</option>
+              ))}
+            </select>
+            {errors.store && <p className="mt-1 text-sm text-red-500">{errors.store}</p>}
+          </div>
+        )}
+
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
             Название товара
