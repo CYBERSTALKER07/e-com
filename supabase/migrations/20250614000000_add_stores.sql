@@ -21,25 +21,41 @@ CREATE TABLE IF NOT EXISTS stores (
   name TEXT NOT NULL,
   description TEXT,
   is_active BOOLEAN DEFAULT true,
-  CONSTRAINT stores_name_owner_key UNIQUE (name, owner_id)
+  CONSTRAINT stores_name_key UNIQUE (name)
 );
 
 -- Enable RLS
 ALTER TABLE stores ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Everyone can view active stores" ON stores;
+DROP POLICY IF EXISTS "Users can manage their own stores" ON stores;
+
 -- Create policies
--- Everyone can view active stores
 CREATE POLICY "Everyone can view active stores"
   ON stores
   FOR SELECT
   USING (is_active = true);
 
--- Users can manage their own stores
 CREATE POLICY "Users can manage their own stores"
   ON stores
   FOR ALL
   USING (auth.uid() = owner_id)
   WITH CHECK (auth.uid() = owner_id);
+
+-- Create a trigger to update updated_at
+CREATE OR REPLACE FUNCTION update_store_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_store_updated_at
+    BEFORE UPDATE ON stores
+    FOR EACH ROW
+    EXECUTE FUNCTION update_store_updated_at_column();
 
 -- Add store_id to products table
 ALTER TABLE IF EXISTS products 

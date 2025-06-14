@@ -48,6 +48,12 @@ const StorePage = () => {
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user || !user.id) {
+      toast.error('Please log in to create a store');
+      return;
+    }
+
     const store = await createStore(newStore);
     if (store) {
       setIsCreating(false);

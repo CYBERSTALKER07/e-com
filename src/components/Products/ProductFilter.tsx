@@ -31,24 +31,24 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   };
 
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
+    const value = Math.max(0, Number(e.target.value) || 0);
     onPriceRangeChange([value, priceRange[1]]);
   };
 
   const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
+    const value = Math.max(priceRange[0], Number(e.target.value) || maxPrice);
     onPriceRangeChange([priceRange[0], value]);
   };
 
   const handlePriceChange = (index: number, value: number) => {
     const newRange: [number, number] = [...priceRange] as [number, number];
-    newRange[index] = value;
+    newRange[index] = Math.max(0, Number(value) || 0);
 
     // Ensure min <= max
-    if (index === 0 && value > newRange[1]) {
-      newRange[1] = value;
-    } else if (index === 1 && value < newRange[0]) {
-      newRange[0] = value;
+    if (index === 0 && newRange[0] > newRange[1]) {
+      newRange[1] = newRange[0];
+    } else if (index === 1 && newRange[1] < newRange[0]) {
+      newRange[0] = newRange[1];
     }
 
     onPriceRangeChange(newRange);

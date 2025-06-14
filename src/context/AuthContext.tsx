@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   full_name: string;
   email: string;
@@ -12,7 +12,7 @@ interface UserProfile {
   phone?: string | null;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
@@ -27,7 +27,7 @@ interface AuthContextType {
   updateProfile: (data: Partial<UserProfile>) => Promise<{ error: Error | null }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -41,15 +41,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setIsLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setIsLoading(false);
+        
+        // Clear user data on sign out
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setIsAdmin(false);
+        }
       }
     );
 
@@ -64,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!user) {
         setProfile(null);
         setIsAdmin(false);
+        setIsLoading(false);
         return;
       }
 
@@ -77,51 +82,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         // Set admin status based on metadata
-        const isAdminUser = 
-          user.user_metadata.role === 'admin' || 
-          user.user_metadata.is_admin === true;
-        
+        const isAdminUser = user.user_metadata.role === 'admin';
         setIsAdmin(isAdminUser);
-        
-        // Try to get profile from database, but don't fail if it doesn't work
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
+        setProfile(basicProfile);
 
-          if (!error && data) {
-            const userProfile: UserProfile = {
-              id: data.id,
-              full_name: data.full_name,
-              email: user.email || '',
-              role: data.role,
-              avatar_url: data.avatar_url,
-              phone: data.phone
-            };
-            
-            setProfile(userProfile);
-            setIsAdmin(data.role === 'admin');
-          } else {
-            // Use the basic profile if we can't get the database profile
-            setProfile(basicProfile);
-          }
-        } catch (dbError) {
-          console.log('Using basic profile due to database error:', dbError);
-          setProfile(basicProfile);
+        // Try to get profile from database
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && data) {
+          const userProfile: UserProfile = {
+            id: data.id,
+            full_name: data.full_name,
+            email: user.email || '',
+            role: data.role,
+            avatar_url: data.avatar_url,
+            phone: data.phone
+          };
+          
+          setProfile(userProfile);
+          setIsAdmin(data.role === 'admin');
         }
       } catch (error) {
         console.error('Error in profile fetch process:', error);
-        // Ensure we still have a basic profile even if there's an error
-        const fallbackProfile: UserProfile = {
-          id: user.id,
-          full_name: user.email?.split('@')[0] || 'User',
-          email: user.email || '',
-          role: 'user'
-        };
-        setProfile(fallbackProfile);
-        setIsAdmin(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -146,11 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      // For development purposes, auto-confirm the user
-      if (data.user && !data.user.confirmed_at) {
-        toast.success('Registration successful! In a production environment, you would need to confirm your email.');
-      } else {
-        toast.success('Registration successful!');
+      // Profile creation is handled by the database trigger
+      if (data.user) {
+        toast.success('Registration successful! Please check your email to confirm your account.');
       }
       
       return { error: null };
@@ -163,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -171,6 +157,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         toast.error(error.message);
         return { error };
+      }
+
+      // Fetch profile after successful sign in
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.warn('Error fetching profile:', profileError);
+          // Don't fail the sign in if profile fetch fails
+        } else if (profile) {
+          setProfile({
+            id: profile.id,
+            full_name: profile.full_name,
+            email: data.user.email || '',
+            role: profile.role,
+            avatar_url: profile.avatar_url,
+            phone: profile.phone
+          });
+          setIsAdmin(profile.role === 'admin');
+        }
       }
 
       toast.success('Signed in successfully!');
@@ -250,20 +260,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Error updating user metadata:', metadataError);
       }
       
-      // Try to update the profiles table, but don't fail if it doesn't work
-      try {
+      // Try to update the profiles table
+      if (data.full_name || data.role || data.avatar_url || data.phone) {
         const updates = {
           id: user.id,
-          updated_at: new Date().toISOString(),
-          ...data,
+          full_name: data.full_name || profile?.full_name || '',
+          role: data.role || profile?.role || 'user',
+          avatar_url: data.avatar_url,
+          phone: data.phone,
+          updated_at: new Date().toISOString()
         };
 
-        await supabase
+        const { error: dbError } = await supabase
           .from('profiles')
           .upsert(updates);
-      } catch (dbError) {
-        console.warn('Could not update profile in database:', dbError);
-        // Continue anyway since we updated the metadata
+
+        if (dbError) {
+          console.warn('Could not update profile in database:', dbError);
+        }
       }
       
       // Update local profile state
@@ -283,32 +297,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Re-export the useAuth hook directly from this file
+  const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        session,
-        user,
-        profile,
-        isLoading,
-        isAuthenticated: !!user,
-        isAdmin,
-        signUp,
-        signIn,
-        signOut,
-        resetPassword,
-        updatePassword,
-        updateProfile,
-      }}
-    >
+    <AuthContext.Provider value={{
+      session,
+      user,
+      profile,
+      isLoading,
+      isAuthenticated: !!user,
+      isAdmin,
+      signUp,
+      signIn,
+      signOut,
+      resetPassword,
+      updatePassword,
+      updateProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

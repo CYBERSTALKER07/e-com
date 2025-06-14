@@ -42,16 +42,16 @@ const ProductsPage: React.FC = () => {
           .from('products')
           .select(`
             *,
-            stores:store_id (
+            store:store_id (
               name,
               is_active
             )
           `)
-          .eq('stores.is_active', true);
+          .eq('store.is_active', true);
 
         if (error) throw error;
 
-        const validProducts = data.filter(product => product.stores !== null);
+        const validProducts = data.filter(product => product.store !== null);
         setProducts(validProducts);
         
         // Extract unique categories

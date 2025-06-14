@@ -27,7 +27,7 @@ const ProductDetailPage: React.FC = () => {
           .from('products')
           .select(`
             *,
-            stores:store_id (
+            store:store_id (
               name,
               description,
               is_active
@@ -40,7 +40,7 @@ const ProductDetailPage: React.FC = () => {
         if (!productData) throw new Error('Product not found');
 
         setProduct(productData);
-        setStore(productData.stores);
+        setStore(productData.store);
 
         // Fetch other products from the same store
         const { data: storeProducts, error: storeError } = await supabase

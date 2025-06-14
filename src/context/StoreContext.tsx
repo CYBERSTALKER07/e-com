@@ -57,14 +57,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createStore = async (data: CreateStoreDTO): Promise<Store | null> => {
     try {
+      if (!user?.id) {
+        toast.error('You must be logged in to create a store');
+        return null;
+      }
+
+      const { data: existingStore, error: existingError } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('name', data.name)
+        .single();
+
+      if (existingStore) {
+        toast.error('A store with this name already exists');
+        return null;
+      }
+
       const { data: store, error } = await supabase
         .from('stores')
-        .insert([{ ...data, owner_id: user?.id }])
+        .insert({
+          name: data.name,
+          description: data.description,
+          owner_id: user.id,
+          is_active: true
+        })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Store creation error:', error);
+        if (error.code === '42501') {
+          toast.error('You do not have permission to create a store');
+        } else if (error.code === '23505') {
+          toast.error('A store with this name already exists');
+        } else {
+          toast.error('Failed to create store');
+        }
+        return null;
+      }
+
       toast.success('Store created successfully');
+      // Update local stores state
+      setStores(prevStores => [...prevStores, store]);
       return store;
     } catch (error) {
       console.error('Error creating store:', error);

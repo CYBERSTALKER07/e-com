@@ -38,22 +38,23 @@ CREATE TRIGGER update_profiles_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Create a function to handle new user registration
+-- Update the handle_new_user function to properly extract metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
   INSERT INTO public.profiles (id, full_name, email, role)
   VALUES (
     new.id,
-    new.raw_user_meta_data->'full_name',
+    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
     new.email,
-    COALESCE(new.raw_user_meta_data->'role', 'user')
+    COALESCE(new.raw_user_meta_data->>'role', 'user')::text
   );
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger for new user registration
-CREATE OR REPLACE TRIGGER on_auth_user_created
+-- Make sure the trigger exists
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();

@@ -6,10 +6,6 @@ export interface Store {
   name: string;
   description: string | null;
   is_active: boolean;
-  owner_display_name: string | null;
-  logo_url: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
 }
 
 export interface Product {
@@ -76,12 +72,7 @@ export interface User {
 
 export interface CreateStoreDTO {
   name: string;
-  description?: string;
-  is_active?: boolean;
-  owner_display_name?: string;
-  logo_url?: string;
-  contact_email?: string;
-  contact_phone?: string;
+  description?: string | null;
 }
 
 export interface UpdateStoreDTO extends Partial<CreateStoreDTO> {
