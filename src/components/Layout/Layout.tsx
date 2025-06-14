@@ -8,8 +8,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <Sidebar />
-      <div className="pl-[70px]"> {/* Adjusted padding to match sidebar width */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+      <div className="md:pl-[70px]"> {/* Padding only on medium and larger screens */}
         <main>
           {children}
         </main>
