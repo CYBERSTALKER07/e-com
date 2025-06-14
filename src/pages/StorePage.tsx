@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Store, CreateStoreDTO, Product } from '../types';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import AdminProductForm from '../components/Admin/AdminProductForm';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout/Layout';
-
+import { X, Maximize2, Minimize2 } from 'lucide-react';
 const StorePage = () => {
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
   const { userStores, loading, createStore, updateStore, deleteStore } = useStore();
   const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);

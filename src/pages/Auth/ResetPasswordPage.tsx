@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KeyRound, Lock } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
 const ResetPasswordPage: React.FC = () => {

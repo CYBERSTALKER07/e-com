@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KeyRound, Mail, ArrowLeft } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
 
 const ForgotPasswordPage: React.FC = () => {

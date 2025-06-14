@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, ShoppingBag, Heart, Clock, User, Package, Settings } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../context/CartContext';
 
 const Sidebar: React.FC = () => {
