@@ -20,13 +20,23 @@ const ProductDetailPage: React.FC = () => {
   
   useEffect(() => {
     const fetchProduct = async () => {
+      if (!id) return;
       setIsLoading(true);
       try {
         // Fetch product with store information
         const { data: productData, error: productError } = await supabase
           .from('products')
           .select(`
-            *,
+            id,
+            name,
+            price,
+            description,
+            image,
+            category,
+            store_id,
+            stock_quantity,
+            is_visible,
+            sku,
             store:store_id (
               name,
               description,
@@ -39,19 +49,52 @@ const ProductDetailPage: React.FC = () => {
         if (productError) throw productError;
         if (!productData) throw new Error('Product not found');
 
-        setProduct(productData);
+        // Transform the data to match our Product interface
+        const product: Product = {
+          id: productData.id,
+          name: productData.name,
+          price: productData.price,
+          description: productData.description,
+          image: productData.image,
+          category: productData.category,
+          store_id: productData.store_id,
+          specifications: {},  // Initialize empty since it's not in DB
+          stock_quantity: productData.stock_quantity,
+          is_visible: productData.is_visible,
+          sku: productData.sku
+        };
+
+        setProduct(product);
         setStore(productData.store);
 
         // Fetch other products from the same store
         const { data: storeProducts, error: storeError } = await supabase
           .from('products')
-          .select('*')
+          .select(`
+            id,
+            name,
+            price,
+            description,
+            image,
+            category,
+            store_id,
+            stock_quantity,
+            is_visible,
+            sku
+          `)
           .eq('store_id', productData.store_id)
           .neq('id', id)
           .limit(4);
 
         if (storeError) throw storeError;
-        setStoreProducts(storeProducts || []);
+
+        // Transform store products to match Product interface
+        const transformedStoreProducts: Product[] = (storeProducts || []).map(p => ({
+          ...p,
+          specifications: {}  // Initialize empty since it's not in DB
+        }));
+
+        setStoreProducts(transformedStoreProducts);
       } catch (error) {
         console.error('Error fetching product:', error);
       } finally {
@@ -139,7 +182,7 @@ const ProductDetailPage: React.FC = () => {
               <p className="text-gray-600 mb-6">{product.description}</p>
 
               {/* Specifications */}
-              {Object.entries(product.specifications).length > 0 && (
+              {product.specifications && Object.entries(product.specifications).length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Характеристики</h3>
                   <dl className="grid grid-cols-1 gap-2">
@@ -159,6 +202,7 @@ const ProductDetailPage: React.FC = () => {
                 <button
                   onClick={decreaseQuantity}
                   className="p-2 border rounded-l hover:bg-gray-50"
+                  aria-label="Уменьшить количество"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
@@ -166,6 +210,7 @@ const ProductDetailPage: React.FC = () => {
                 <button
                   onClick={increaseQuantity}
                   className="p-2 border rounded-r hover:bg-gray-50"
+                  aria-label="Увеличить количество"
                 >
                   <Plus className="h-4 w-4" />
                 </button>

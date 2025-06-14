@@ -1,90 +1,78 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Heart } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
 import { Product } from '../../types';
+import { useCart } from '../../context/CartContext';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const { addToCart } = useCart();
-  const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div 
-      className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300"
-      data-aos="fade-up"
+      className="group bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:-translate-y-1"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative aspect-square overflow-hidden rounded-t-2xl">
+      {/* Image Container */}
+      <div className="relative aspect-square">
         <img
-          src={product.imageUrl}
+          src={product.image}
           alt={product.name}
-          className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-110"
         />
+        {/* Hover Overlay */}
         <div className={`absolute inset-0 bg-black/40 flex items-center justify-center gap-4 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
           <Link
             to={`/products/${product.id}`}
             className="bg-white text-primary hover:bg-primary hover:text-white p-3 rounded-full transform hover:scale-110 transition-all"
+            title="Быстрый просмотр"
           >
-            Quick View
+            <ShoppingBag className="h-5 w-5" />
           </Link>
-        </div>
-        {product.isNew && (
-          <div className="absolute top-4 left-4 bg-primary text-white text-sm font-medium px-3 py-1 rounded-full">
-            New
-          </div>
-        )}
-        {product.discount > 0 && (
-          <div className="absolute top-4 right-4 bg-red-500 text-white text-sm font-medium px-3 py-1 rounded-full">
-            -{product.discount}%
-          </div>
-        )}
-      </div>
-      
-      <div className="p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary transition-colors">
-            {product.name}
-          </h3>
-          <button 
-            className="text-gray-400 hover:text-red-500 transition-colors"
-            aria-label="Add to wishlist"
+          <button
+            onClick={() => addToCart(product)}
+            className="bg-primary text-white hover:bg-primary-dark p-3 rounded-full transform hover:scale-110 transition-all"
+            title="Добавить в корзину"
           >
             <Heart className="h-5 w-5" />
           </button>
         </div>
-        
-        <p className="text-sm text-gray-500 mb-3">{product.category}</p>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {product.discount > 0 ? (
-              <>
-                <span className="text-lg font-bold text-primary">
-                  ${((product.price * (100 - product.discount)) / 100).toFixed(2)}
-                </span>
-                <span className="text-sm text-gray-400 line-through">
-                  ${product.price}
-                </span>
-              </>
-            ) : (
-              <span className="text-lg font-bold text-primary">
-                ${product.price}
-              </span>
-            )}
+        {/* Labels */}
+        {product.stock_quantity === 0 && (
+          <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-medium px-3 py-1 rounded-full">
+            Нет в наличии
           </div>
-          
-          <button
-            onClick={() => addToCart(product)}
-            className="inline-flex items-center justify-center p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
-            aria-label="Add to cart"
-          >
-            <ShoppingBag className="h-5 w-5" />
-          </button>
+        )}
+        {product.is_visible === false && (
+          <div className="absolute top-4 right-4 bg-gray-500 text-white text-sm font-medium px-3 py-1 rounded-full">
+            Скрыто
+          </div>
+        )}
+      </div>
+
+      {/* Product Info */}
+      <div className="p-4">
+        <Link 
+          to={`/products/${product.id}`}
+          className="block group"
+        >
+          <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary transition-colors truncate">
+            {product.name}
+          </h3>
+        </Link>
+        <p className="text-sm text-gray-500 mb-2 line-clamp-2">{product.description}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-bold text-primary">
+            ${product.price.toFixed(2)}
+          </span>
+          <span className="text-sm text-gray-500">
+            {product.stock_quantity > 0 ? `В наличии: ${product.stock_quantity}` : 'Нет в наличии'}
+          </span>
         </div>
       </div>
     </div>

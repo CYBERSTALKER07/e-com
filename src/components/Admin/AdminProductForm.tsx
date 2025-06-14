@@ -60,14 +60,17 @@ const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, on
     if (!validateForm()) return;
     
     const productData: Product = {
-      id: product?.id || '',
-      name,
+      id: product?.id || undefined,
+      name: name.trim(),
       price: parseFloat(price),
-      description,
-      image,
-      category,
+      description: description.trim(),
+      image: image.trim(),
+      category: category.trim(),
       store_id: storeId,
-      specifications,
+      specifications: specifications || {},
+      stock_quantity: 0,
+      is_visible: true,
+      sku: `SKU-${Date.now()}`
     };
     
     onSave(productData);

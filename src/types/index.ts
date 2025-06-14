@@ -73,6 +73,13 @@ export interface User {
 export interface CreateStoreDTO {
   name: string;
   description?: string | null;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
 }
 
 export interface UpdateStoreDTO extends Partial<CreateStoreDTO> {

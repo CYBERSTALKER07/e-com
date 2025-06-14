@@ -122,19 +122,21 @@ const ProductDetailPage: React.FC = () => {
               <p className="text-gray-600">{product.description}</p>
             </div>
             
-            <div className="mb-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-2">Характеристики</h2>
-              <div className="bg-gray-50 rounded-md p-4">
-                <dl className="space-y-2">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="grid grid-cols-3 gap-4">
-                      <dt className="text-sm font-medium text-gray-500">{key}</dt>
-                      <dd className="text-sm text-gray-900 col-span-2">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
+            {product.specifications && Object.entries(product.specifications).length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-lg font-medium text-gray-900 mb-2">Характеристики</h2>
+                <div className="bg-gray-50 rounded-md p-4">
+                  <dl className="space-y-2">
+                    {Object.entries(product.specifications).map(([key, value]) => (
+                      <div key={key} className="grid grid-cols-3 gap-4">
+                        <dt className="text-sm font-medium text-gray-500">{key}</dt>
+                        <dd className="text-sm text-gray-900 col-span-2">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
               </div>
-            </div>
+            )}
             
             <div className="mb-6">
               <h2 className="text-lg font-medium text-gray-900 mb-2">Количество</h2>

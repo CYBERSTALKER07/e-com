@@ -21,6 +21,9 @@ const StorePage = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [storeProducts, setStoreProducts] = useState<Record<string, Product[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+  const [storeOrders, setStoreOrders] = useState<Record<string, any[]>>({});
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   // Fetch products for a store
   const fetchStoreProducts = async (storeId: string) => {
@@ -41,10 +44,30 @@ const StorePage = () => {
     }
   };
 
-  // When a store is selected, fetch its products
+  // Fetch orders for a store
+  const fetchStoreOrders = async (storeId: string) => {
+    setIsLoadingOrders(true);
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .contains('items', [{ store_id: storeId }]);
+
+      if (error) throw error;
+      setStoreOrders(prev => ({ ...prev, [storeId]: orders || [] }));
+    } catch (error) {
+      console.error('Error fetching store orders:', error);
+      toast.error('Не удалось загрузить заказы');
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  // When a store is selected, fetch its products and orders
   useEffect(() => {
     if (selectedStore) {
       fetchStoreProducts(selectedStore.id);
+      fetchStoreOrders(selectedStore.id);
     }
   }, [selectedStore]);
 
@@ -94,30 +117,90 @@ const StorePage = () => {
 
   const handleProductSave = async (product: Product) => {
     try {
+      if (!selectedStore?.id) {
+        throw new Error('No store selected');
+      }
+
+      // Clean and validate the data before saving
+      const productData = {
+        name: product.name.trim(),
+        description: product.description.trim(),
+        price: Number(product.price),
+        image: product.image.trim(),
+        category: product.category.trim(),
+        store_id: selectedStore.id,
+        stock_quantity: product.stock_quantity || 0,
+        is_visible: true,
+        sku: product.sku || `SKU-${Date.now()}`
+      };
+
+      // If editing an existing product, include the id
+      if (product.id) {
+        productData['id'] = product.id;
+      }
+
+      // Validate required fields
+      if (!productData.name) throw new Error('Name is required');
+      if (!productData.price || isNaN(productData.price)) throw new Error('Valid price is required');
+      if (!productData.description) throw new Error('Description is required');
+      if (!productData.image) throw new Error('Image is required');
+      if (!productData.category) throw new Error('Category is required');
+
+      console.log('Attempting to save product:', productData);
+
       const { data, error } = await supabase
         .from('products')
-        .upsert({
-          ...product,
-          store_id: selectedStore?.id
-        })
-        .select()
-        .single();
+        .upsert(productData)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
 
-      setStoreProducts(prev => ({
-        ...prev,
-        [selectedStore!.id]: prev[selectedStore!.id].map(p => 
-          p.id === data.id ? data : p
-        ).concat(product.id ? [] : [data])
-      }));
+      console.log('Product saved successfully:', data);
+
+      // Add back the specifications for the local state since we keep it in the frontend
+      const savedProduct = {
+        ...data[0],
+        specifications: product.specifications || {}
+      };
+
+      // Update local state with the new/updated product
+      setStoreProducts(prev => {
+        const existingProducts = prev[selectedStore.id] || [];
+        const updatedProducts = product.id
+          ? existingProducts.map(p => p.id === savedProduct.id ? savedProduct : p)
+          : [...existingProducts, savedProduct];
+        
+        return {
+          ...prev,
+          [selectedStore.id]: updatedProducts
+        };
+      });
 
       setIsProductFormOpen(false);
       setEditingProduct(null);
       toast.success(product.id ? 'Товар обновлен' : 'Товар добавлен');
-    } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error('Не удалось сохранить товар');
+    } catch (error: any) {
+      console.error('Error saving product:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        error
+      });
+      
+      toast.error(
+        error.message === 'No store selected'
+          ? 'Пожалуйста, выберите магазин'
+          : error.message || 'Не удалось сохранить товар'
+      );
     }
   };
 
@@ -195,6 +278,63 @@ const StorePage = () => {
                         placeholder="Введите описание магазина"
                         aria-label="Описание магазина"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={newStore.email || ''}
+                        onChange={(e) => setNewStore({ ...newStore, email: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                        placeholder="Email для связи"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Телефон</label>
+                      <input
+                        type="tel"
+                        value={newStore.phone || ''}
+                        onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                        placeholder="Номер телефона"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Адрес</label>
+                      <input
+                        type="text"
+                        value={newStore.address || ''}
+                        onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                        placeholder="Адрес магазина"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Город</label>
+                        <input
+                          type="text"
+                          value={newStore.city || ''}
+                          onChange={(e) => setNewStore({ ...newStore, city: e.target.value })}
+                          className="w-full p-2 border rounded"
+                          required
+                          placeholder="Город"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Почтовый индекс</label>
+                        <input
+                          type="text"
+                          value={newStore.postal_code || ''}
+                          onChange={(e) => setNewStore({ ...newStore, postal_code: e.target.value })}
+                          className="w-full p-2 border rounded"
+                          required
+                          placeholder="Почтовый индекс"
+                        />
+                      </div>
                     </div>
                     <div className="flex space-x-2">
                       <button
@@ -329,59 +469,147 @@ const StorePage = () => {
                   )}
                 </div>
 
-                {/* Products Section */}
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Товары</h2>
+                {/* Navigation Tabs */}
+                <div className="border-b border-gray-200">
+                  <div className="flex">
                     <button
-                      onClick={() => {
-                        setEditingProduct(null);
-                        setIsProductFormOpen(true);
-                      }}
-                      className="bg-blue-500 text-white px-4 py-2 rounded"
+                      className={`px-4 py-3 font-medium text-sm flex items-center ${
+                        activeTab === 'products' 
+                          ? 'text-primary border-b-2 border-primary' 
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      onClick={() => setActiveTab('products')}
                     >
-                      Добавить товар
+                      Товары
+                    </button>
+                    <button
+                      className={`px-4 py-3 font-medium text-sm flex items-center ${
+                        activeTab === 'orders' 
+                          ? 'text-primary border-b-2 border-primary' 
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      onClick={() => setActiveTab('orders')}
+                    >
+                      Заказы
                     </button>
                   </div>
+                </div>
 
-                  {isLoadingProducts ? (
-                    <LoadingSpinner />
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {storeProducts[selectedStore.id]?.map((product) => (
-                        <div key={product.id} className="bg-white border rounded-lg overflow-hidden">
-                          <img 
-                            src={product.image} 
-                            alt={product.name} 
-                            className="w-full h-48 object-cover"
-                          />
-                          <div className="p-4">
-                            <h3 className="font-bold mb-2">{product.name}</h3>
-                            <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
-                            <p className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</p>
-                            <div className="mt-4 flex justify-end space-x-2">
-                              <button
-                                onClick={() => {
-                                  setEditingProduct(product);
-                                  setIsProductFormOpen(true);
-                                }}
-                                className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
-                              >
-                                Редактировать
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="bg-red-500 text-white px-3 py-1 rounded text-sm"
-                              >
-                                Удалить
-                              </button>
+                {/* Products Section */}
+                {activeTab === 'products' && (
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold">Товары</h2>
+                      <button
+                        onClick={() => {
+                          setEditingProduct(null);
+                          setIsProductFormOpen(true);
+                        }}
+                        className="bg-blue-500 text-white px-4 py-2 rounded"
+                      >
+                        Добавить товар
+                      </button>
+                    </div>
+
+                    {isLoadingProducts ? (
+                      <LoadingSpinner />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {storeProducts[selectedStore.id]?.map((product) => (
+                          <div key={product.id} className="bg-white border rounded-lg overflow-hidden">
+                            <img 
+                              src={product.image} 
+                              alt={product.name} 
+                              className="w-full h-48 object-cover"
+                            />
+                            <div className="p-4">
+                              <h3 className="font-bold mb-2">{product.name}</h3>
+                              <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+                              <p className="text-lg font-bold text-blue-600">${product.price.toFixed(2)}</p>
+                              <div className="mt-4 flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingProduct(product);
+                                    setIsProductFormOpen(true);
+                                  }}
+                                  className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                                >
+                                  Редактировать
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="bg-red-500 text-white px-3 py-1 rounded text-sm"
+                                >
+                                  Удалить
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Orders Section */}
+                {activeTab === 'orders' && (
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-6">Заказы магазина</h2>
+                    {isLoadingOrders ? (
+                      <LoadingSpinner />
+                    ) : storeOrders[selectedStore.id]?.length === 0 ? (
+                      <p className="text-gray-600 text-center">Заказов пока нет</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {storeOrders[selectedStore.id]?.map((order) => (
+                          <div key={order.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h3 className="font-medium">Заказ #{order.id.substring(0, 8)}</h3>
+                                <p className="text-sm text-gray-600">
+                                  Оформлен: {new Date(order.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className={`px-2 py-1 rounded-full text-sm ${
+                                order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {order.status}
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              {order.items
+                                .filter((item: any) => item.store_id === selectedStore.id)
+                                .map((item: any) => (
+                                  <div key={item.product.id} className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      <img
+                                        src={item.product.image}
+                                        alt={item.product.name}
+                                        className="w-16 h-16 object-cover rounded"
+                                      />
+                                      <div className="ml-4">
+                                        <p className="font-medium">{item.product.name}</p>
+                                        <p className="text-sm text-gray-600">
+                                          Количество: {item.quantity}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p className="font-medium">
+                                      ${(item.product.price * item.quantity).toFixed(2)}
+                                    </p>
+                                  </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow p-6 text-center">
@@ -393,16 +621,37 @@ const StorePage = () => {
 
         {/* Product Form Modal */}
         {isProductFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-              <AdminProductForm
-                product={editingProduct}
-                onSave={handleProductSave}
-                onCancel={() => {
-                  setIsProductFormOpen(false);
-                  setEditingProduct(null);
-                }}
-              />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto">
+            <div className="bg-white w-full min-h-screen">
+              <div className="border-b border-gray-200">
+                <div className="max-w-4xl mx-auto px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {editingProduct ? 'Редактировать товар' : 'Добавить новый товар'}
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setIsProductFormOpen(false);
+                        setEditingProduct(null);
+                      }}
+                      className="text-gray-500 hover:text-gray-700 p-2"
+                      aria-label="Close"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="max-w-4xl mx-auto px-6 py-6">
+                <AdminProductForm
+                  product={editingProduct}
+                  onSave={handleProductSave}
+                  onCancel={() => {
+                    setIsProductFormOpen(false);
+                    setEditingProduct(null);
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
