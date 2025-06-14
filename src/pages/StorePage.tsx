@@ -1,15 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../hooks/useAuth';
-import { Store, CreateStoreDTO, Product } from '../types';
+import { Store, CreateStoreDTO, Product, CartItem } from '../types';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import AdminProductForm from '../components/Admin/AdminProductForm';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout/Layout';
-import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { X } from 'lucide-react';
+
+interface StoreOrder {
+  id: string;
+  created_at: string;
+  customer_id: string;
+  status: string;
+  total: number;
+  shipping_address: {
+    fullName: string;
+    [key: string]: any;
+  };
+  billing_address: any;
+  payment_method: string;
+  items: CartItem[];
+  estimated_delivery: string;
+}
+
 const StorePage = () => {
-    const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const { userStores, loading, createStore, updateStore, deleteStore } = useStore();
   const { user } = useAuth();
@@ -22,7 +39,7 @@ const StorePage = () => {
   const [storeProducts, setStoreProducts] = useState<Record<string, Product[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
-  const [storeOrders, setStoreOrders] = useState<Record<string, any[]>>({});
+  const [storeOrders, setStoreOrders] = useState<Record<string, StoreOrder[]>>({});
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   // Fetch products for a store
@@ -48,13 +65,31 @@ const StorePage = () => {
   const fetchStoreOrders = async (storeId: string) => {
     setIsLoadingOrders(true);
     try {
+      // First get all products for this store
+      const { data: products } = await supabase
+        .from('products')
+        .select('id')
+        .eq('store_id', storeId);
+
+      if (!products) return;
+
+      const productIds = products.map(p => p.id);
+
+      // Then get orders containing these products
       const { data: orders, error } = await supabase
         .from('orders')
-        .select('*')
-        .contains('items', [{ store_id: storeId }]);
+        .select('*, items')
+        .neq('status', 'cancelled');
 
       if (error) throw error;
-      setStoreOrders(prev => ({ ...prev, [storeId]: orders || [] }));
+
+      // Filter orders to only include those with products from this store
+      const storeOrders = orders?.filter(order => {
+        const orderItems = order.items as CartItem[];
+        return orderItems.some(item => productIds.includes(item.product.id));
+      });
+
+      setStoreOrders(prev => ({ ...prev, [storeId]: storeOrders || [] }));
     } catch (error) {
       console.error('Error fetching store orders:', error);
       toast.error('Не удалось загрузить заказы');
@@ -297,23 +332,6 @@ const StorePage = () => {
                         value={newStore.phone || ''}
                         onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })}
                         className="w-full p-2 border rounded"
-                        required
-                        placeholder="Номер телефона"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Адрес</label>
-                      <input
-                        type="text"
-                        value={newStore.address || ''}
-                        onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
-                        className="w-full p-2 border rounded"
-                        required
-                        placeholder="Адрес магазина"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
                         <label className="block text-sm font-medium mb-1">Город</label>
                         <input
                           type="text"
@@ -557,7 +575,7 @@ const StorePage = () => {
                     <h2 className="text-xl font-bold mb-6">Заказы магазина</h2>
                     {isLoadingOrders ? (
                       <LoadingSpinner />
-                    ) : storeOrders[selectedStore.id]?.length === 0 ? (
+                    ) : !storeOrders[selectedStore.id]?.length ? (
                       <p className="text-gray-600 text-center">Заказов пока нет</p>
                     ) : (
                       <div className="space-y-4">
@@ -567,7 +585,10 @@ const StorePage = () => {
                               <div>
                                 <h3 className="font-medium">Заказ #{order.id.substring(0, 8)}</h3>
                                 <p className="text-sm text-gray-600">
-                                  Оформлен: {new Date(order.created_at).toLocaleDateString()}
+                                  Оформлен: {new Date(order.created_at).toLocaleString()}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Покупатель: {order.shipping_address.fullName}
                                 </p>
                               </div>
                               <div className={`px-2 py-1 rounded-full text-sm ${
@@ -577,13 +598,17 @@ const StorePage = () => {
                                 order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
                                 'bg-yellow-100 text-yellow-800'
                               }`}>
-                                {order.status}
+                                {order.status === 'pending' ? 'Новый' :
+                                 order.status === 'processing' ? 'В обработке' :
+                                 order.status === 'shipped' ? 'Отправлен' :
+                                 order.status === 'delivered' ? 'Доставлен' :
+                                 'Отменен'}
                               </div>
                             </div>
-                            <div className="space-y-2">
-                              {order.items
-                                .filter((item: any) => item.store_id === selectedStore.id)
-                                .map((item: any) => (
+                            <div className="space-y-4 border-t pt-4">
+                              {(order.items as CartItem[])
+                                .filter(item => item.product.store_id === selectedStore.id)
+                                .map(item => (
                                   <div key={item.product.id} className="flex items-center justify-between">
                                     <div className="flex items-center">
                                       <img
@@ -594,7 +619,7 @@ const StorePage = () => {
                                       <div className="ml-4">
                                         <p className="font-medium">{item.product.name}</p>
                                         <p className="text-sm text-gray-600">
-                                          Количество: {item.quantity}
+                                          Количество: {item.quantity} × ${item.product.price}
                                         </p>
                                       </div>
                                     </div>
@@ -603,6 +628,14 @@ const StorePage = () => {
                                     </p>
                                   </div>
                               ))}
+                            </div>
+                            <div className="border-t mt-4 pt-4 text-right">
+                              <p className="text-sm text-gray-600">
+                                Сумма товаров магазина: ${(order.items as CartItem[])
+                                  .filter(item => item.product.store_id === selectedStore.id)
+                                  .reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
+                                  .toFixed(2)}
+                              </p>
                             </div>
                           </div>
                         ))}
