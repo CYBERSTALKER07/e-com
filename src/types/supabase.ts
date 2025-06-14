@@ -92,6 +92,113 @@ export interface Database {
           }
         ]
       }
+      products: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          price: number
+          description: string
+          image: string
+          category: string
+          store_id: string
+          stock_quantity: number
+          is_visible: boolean
+          sku: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          price: number
+          description: string
+          image: string
+          category: string
+          store_id: string
+          stock_quantity: number
+          is_visible: boolean
+          sku?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          price?: number
+          description?: string
+          image?: string
+          category?: string
+          store_id?: string
+          stock_quantity?: number
+          is_visible?: boolean
+          sku?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      stores: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          owner_id: string
+          name: string
+          description: string | null
+          is_active: boolean
+          email: string | null
+          phone: string | null
+          address: string | null
+          city: string | null
+          state: string | null
+          country: string | null
+          postal_code: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          owner_id: string
+          name: string
+          description?: string | null
+          is_active?: boolean
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          country?: string | null
+          postal_code?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          owner_id?: string
+          name?: string
+          description?: string | null
+          is_active?: boolean
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          country?: string | null
+          postal_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_owner_id_fkey"
+            columns: ["owner_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,163 +1,221 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Truck, Shield, CreditCard } from 'lucide-react';
+import { ShoppingBag, Truck, Shield, CreditCard, ArrowRight, Star, Users, Gift } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 import ProductGrid from '../components/Products/ProductGrid';
 import { products } from '../data/products';
 
+const heroImages = [
+  'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+  'https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+  'https://images.unsplash.com/photo-1445205170230-053b83016050?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+];
+
 const HomePage: React.FC = () => {
   const featuredProducts = products.slice(0, 4);
+  const [currentHeroImage, setCurrentHeroImage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentHeroImage((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative min-h-screen bg-gradient-to-r from-primary/5 to-secondary-dark/5">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8 text-center lg:text-left" data-aos="fade-right">
-              <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary-dark">
-                Discover Your Signature Style
-              </h1>
-              <p className="text-lg md:text-xl text-gray-600 max-w-2xl">
-                Curated collections of premium menswear that blend contemporary design with timeless elegance. Each piece tells a story of craftsmanship and style.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link to="/products" className="inline-flex items-center px-8 py-3 rounded-full bg-primary text-white font-medium hover:bg-primary-dark transition-all transform hover:scale-105">
-                  Shop Collection
-                  <ShoppingBag className="ml-2 h-5 w-5" />
-                </Link>
-                <button className="inline-flex items-center px-8 py-3 rounded-full border-2 border-primary text-primary font-medium hover:bg-primary hover:text-white transition-all">
-                  Learn More
-                </button>
-              </div>
-              <div className="flex items-center justify-center lg:justify-start space-x-8 pt-8">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">2000+</div>
-                  <div className="text-gray-600">Products</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">150+</div>
-                  <div className="text-gray-600">Brands</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">50k+</div>
-                  <div className="text-gray-600">Customers</div>
-                </div>
-              </div>
+      <section className="relative min-h-screen">
+        <div className="absolute inset-0 overflow-hidden">
+          {heroImages.map((img, index) => (
+            <div
+              key={img}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentHeroImage ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <img
+                src={img}
+                alt="Hero background"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-50" />
             </div>
-            <div className="relative" data-aos="fade-left">
-              <div className="aspect-square rounded-2xl overflow-hidden">
-                <img 
-                  src="/hero-image.jpg" 
-                  alt="Featured Collection" 
-                  className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-lg shadow-xl p-4 animate-bounce-slow">
-                <div className="flex items-center space-x-2">
-                  <div className="bg-green-500 h-2 w-2 rounded-full"></div>
-                  <span className="text-sm font-medium">1,234 people shopping now</span>
-                </div>
-              </div>
+          ))}
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left text-white" data-aos="fade-right">
+              <h1 className="text-5xl font-bold leading-tight mb-6">
+                Discover Your Style <br />
+                With Our Collection
+              </h1>
+              <p className="text-xl mb-8 text-gray-200">
+                Shop the latest trends in fashion with our curated selection of premium clothing and accessories.
+              </p>
+              <Link
+                to="/products"
+                className="inline-flex items-center px-8 py-3 text-lg font-medium text-white bg-primary rounded-full hover:bg-primary-dark transition-colors"
+              >
+                Shop Now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-accent">
+      <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Why Choose Us</h2>
+            <p className="mt-4 text-xl text-gray-600">Experience shopping excellence with our premium services</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-              <div className="bg-primary-light/20 p-3 rounded-full mb-4">
+            <div className="bg-white p-8 rounded-xl shadow-sm" data-aos="fade-up" data-aos-delay="0">
+              <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <ShoppingBag className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Отборная коллекция</h3>
-              <p className="text-gray-600">
-                Тщательно подобранная мужская одежда от премиальных брендов и местных узбекских дизайнеров.
-              </p>
+              <h3 className="text-xl font-semibold mb-4">Premium Selection</h3>
+              <p className="text-gray-600">Curated collection of high-quality fashion items.</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-              <div className="bg-primary-light/20 p-3 rounded-full mb-4">
+            <div className="bg-white p-8 rounded-xl shadow-sm" data-aos="fade-up" data-aos-delay="100">
+              <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <Truck className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Быстрая доставка</h3>
-              <p className="text-gray-600">
-                Доставка в тот же день по Ташкенту и экспресс-доставка по всей стране.
-              </p>
+              <h3 className="text-xl font-semibold mb-4">Fast Delivery</h3>
+              <p className="text-gray-600">Quick and reliable shipping to your doorstep.</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-              <div className="bg-primary-light/20 p-3 rounded-full mb-4">
+            <div className="bg-white p-8 rounded-xl shadow-sm" data-aos="fade-up" data-aos-delay="200">
+              <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Гарантия качества</h3>
-              <p className="text-gray-600">
-                Все наши товары проходят проверку подлинности и качества перед отправкой.
-              </p>
+              <h3 className="text-xl font-semibold mb-4">Secure Shopping</h3>
+              <p className="text-gray-600">Safe and protected online shopping experience.</p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-              <div className="bg-primary-light/20 p-3 rounded-full mb-4">
+            <div className="bg-white p-8 rounded-xl shadow-sm" data-aos="fade-up" data-aos-delay="300">
+              <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <CreditCard className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Удобная оплата</h3>
-              <p className="text-gray-600">
-                Различные способы оплаты, включая наложенный платеж в Ташкенте.
-              </p>
+              <h3 className="text-xl font-semibold mb-4">Easy Payment</h3>
+              <p className="text-gray-600">Multiple secure payment options available.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Featured Products Section */}
-      <section className="py-16">
+      <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Избранные коллекции</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Откройте для себя наши самые популярные предметы мужской одежды, идеально подходящие для климата и образа жизни Ташкента
-            </p>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
+            <p className="mt-4 text-xl text-gray-600">Discover our most popular items</p>
           </div>
           <ProductGrid products={featuredProducts} />
           <div className="text-center mt-12">
             <Link
               to="/products"
-              className="inline-block bg-primary text-white hover:bg-primary-dark px-6 py-3 rounded-md font-medium transition-colors"
+              className="inline-flex items-center px-8 py-3 text-lg font-medium text-white bg-primary rounded-full hover:bg-primary-dark transition-colors"
             >
-              Смотреть все коллекции
+              View All Products
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-16 bg-accent">
+      {/* Testimonials Section */}
+      <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-md p-8 md:p-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">Присоединяйтесь к нашему клубу стиля</h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Подпишитесь, чтобы получать обновления о новых поступлениях, эксклюзивных предложениях и советах по стилю для современного ташкентского джентльмена
-              </p>
-            </div>
-            <form className="max-w-xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <input
-                  type="email"
-                  placeholder="Введите ваш email адрес"
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-                <button
-                  type="submit"
-                  className="bg-primary text-white hover:bg-primary-dark px-6 py-3 rounded-md font-medium transition-colors"
-                >
-                  Подписаться
-                </button>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">What Our Customers Say</h2>
+            <p className="mt-4 text-xl text-gray-600">Read testimonials from our satisfied customers</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white p-8 rounded-xl shadow-sm" data-aos="fade-up" data-aos-delay={i * 100}>
+                <div className="flex items-center mb-4">
+                  <div className="flex text-primary">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-current" />
+                    ))}
+                  </div>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  "Amazing quality and service! The products exceeded my expectations, and the delivery was super fast."
+                </p>
+                <div className="flex items-center">
+                  <img
+                    src={`https://i.pravatar.cc/150?img=${i + 10}`}
+                    alt="Customer"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <div className="ml-4">
+                    <h4 className="font-medium text-gray-900">John Doe</h4>
+                    <p className="text-gray-500 text-sm">Verified Customer</p>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-3 text-center">
-                Подписываясь, вы соглашаетесь с нашей Политикой конфиденциальности и даете согласие на получение обновлений от нашей компании.
-              </p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Community Section */}
+      <section className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Join Our Community</h2>
+            <p className="mt-4 text-xl text-gray-600">Be part of our growing fashion community</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center" data-aos="fade-up">
+              <div className="bg-primary/10 p-6 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Users className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">10K+</h3>
+              <p className="text-gray-600">Active Members</p>
+            </div>
+            <div className="text-center" data-aos="fade-up" data-aos-delay="100">
+              <div className="bg-primary/10 p-6 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Star className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">4.8/5</h3>
+              <p className="text-gray-600">Customer Rating</p>
+            </div>
+            <div className="text-center" data-aos="fade-up" data-aos-delay="200">
+              <div className="bg-primary/10 p-6 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+                <Gift className="h-12 w-12 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-4">15K+</h3>
+              <p className="text-gray-600">Products Delivered</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">Stay Updated</h2>
+            <p className="text-xl text-gray-600 mb-8">
+              Subscribe to our newsletter to receive updates about new products, special offers, and fashion tips.
+            </p>
+            <form className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-3 rounded-full border focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="submit"
+                className="px-8 py-3 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors"
+              >
+                Subscribe
+              </button>
             </form>
           </div>
         </div>

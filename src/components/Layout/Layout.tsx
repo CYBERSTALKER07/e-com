@@ -1,25 +1,23 @@
 import React from 'react';
 import Navbar from './Navbar';
+import Sidebar from './Sidebar';
 import Footer from './Footer';
 import BottomNavigation from './BottomNavigation';
-import Sidebar from './Sidebar';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen bg-gray-100">
       <Navbar />
-      <div className="flex flex-grow">
-        <Sidebar />
-        <main className="flex-grow pb-16 md:pb-0 md:ml-64 px-4 md:px-8 py-6">
+      <Sidebar />
+      <div className="pl-[70px]"> {/* Adjusted padding to match sidebar width */}
+        <main>
           {children}
         </main>
+        <Footer />
       </div>
-      <Footer />
-      <BottomNavigation />
+      <div className="md:hidden">
+        <BottomNavigation />
+      </div>
     </div>
   );
 };
