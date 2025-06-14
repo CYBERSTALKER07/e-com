@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Search, LogOut, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const Navbar: React.FC = () => {
   const { totalItems } = useCart();
-  const { isAuthenticated, isAdmin, signOut, user } = useAuth();
+  const { isAuthenticated, isAdmin, signOut, profile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ const Navbar: React.FC = () => {
               <div className="relative group">
                 <button className="flex items-center text-gray-700 hover:text-primary px-3 py-2 rounded-md font-medium">
                   <User className="h-5 w-5 mr-1" />
-                  <span>{user?.name}</span>
+                  <span>{profile?.full_name}</span>
                 </button>
                 <div className="absolute right-0 w-48 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                   <div className="py-1">

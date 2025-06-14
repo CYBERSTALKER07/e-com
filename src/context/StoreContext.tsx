@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Store, CreateStoreDTO, UpdateStoreDTO } from '../types';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 
 interface StoreContextType {

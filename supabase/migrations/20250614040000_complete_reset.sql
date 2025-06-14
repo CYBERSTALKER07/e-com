@@ -74,6 +74,28 @@ CREATE POLICY "Users can update their own profile"
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
 
+CREATE POLICY "Admins can update any profile"
+    ON profiles
+    FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins have full access"
+    ON profiles
+    FOR ALL
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
 CREATE POLICY "Everyone can view active stores"
     ON stores
     FOR SELECT
@@ -120,18 +142,26 @@ CREATE POLICY "Users can insert own orders"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-    INSERT INTO public.profiles (id, full_name, email, role)
+    INSERT INTO public.profiles (id, full_name, email, role, created_at, updated_at)
     VALUES (
         new.id,
-        new.raw_user_meta_data->'full_name',
+        COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
         new.email,
-        COALESCE(new.raw_user_meta_data->'role', 'user')
-    );
+        COALESCE(NULLIF(new.raw_user_meta_data->>'role', ''), 'user'),
+        now(),
+        now()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET
+        full_name = EXCLUDED.full_name,
+        email = EXCLUDED.email,
+        role = EXCLUDED.role,
+        updated_at = now();
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create trigger for new user registration
+-- Recreate trigger for new user registration
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users

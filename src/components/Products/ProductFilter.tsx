@@ -19,7 +19,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   onCategoryChange,
   priceRange,
   onPriceRangeChange,
-  maxPrice,
+  maxPrice = 1000, // Default max price
   stores,
   selectedStore,
   onStoreChange
@@ -31,27 +31,29 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   };
 
   const handleMinPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(0, Number(e.target.value) || 0);
-    onPriceRangeChange([value, priceRange[1]]);
+    const value = e.target.value;
+    if (value === '') {
+      onPriceRangeChange([0, priceRange[1]]);
+      return;
+    }
+    
+    const newValue = Math.max(0, parseFloat(value));
+    if (!isNaN(newValue)) {
+      onPriceRangeChange([newValue, Math.max(newValue, priceRange[1])]);
+    }
   };
 
   const handleMaxPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = Math.max(priceRange[0], Number(e.target.value) || maxPrice);
-    onPriceRangeChange([priceRange[0], value]);
-  };
-
-  const handlePriceChange = (index: number, value: number) => {
-    const newRange: [number, number] = [...priceRange] as [number, number];
-    newRange[index] = Math.max(0, Number(value) || 0);
-
-    // Ensure min <= max
-    if (index === 0 && newRange[0] > newRange[1]) {
-      newRange[1] = newRange[0];
-    } else if (index === 1 && newRange[1] < newRange[0]) {
-      newRange[0] = newRange[1];
+    const value = e.target.value;
+    if (value === '') {
+      onPriceRangeChange([priceRange[0], maxPrice]);
+      return;
     }
-
-    onPriceRangeChange(newRange);
+    
+    const newValue = Math.min(parseFloat(value), maxPrice);
+    if (!isNaN(newValue)) {
+      onPriceRangeChange([Math.min(priceRange[0], newValue), newValue]);
+    }
   };
 
   const clearFilters = () => {
@@ -61,6 +63,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
       onStoreChange(null);
     }
   };
+
+  // Default min and max values for the price inputs with NaN protection
+  const minPrice = !isNaN(priceRange[0]) ? Math.max(0, priceRange[0]) : 0;
+  const maxPriceValue = !isNaN(priceRange[1]) ? Math.min(priceRange[1], maxPrice) : maxPrice;
 
   return (
     <div className="mb-8">
@@ -117,33 +123,6 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                   ))}
                 </div>
 
-                <h3 className="text-sm font-medium text-gray-900 mt-6 mb-2">Магазины</h3>
-                <div className="space-y-2">
-                  <button
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      selectedStore === null
-                        ? 'bg-primary-light text-white'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                    onClick={() => onStoreChange(null)}
-                  >
-                    Все
-                  </button>
-                  {stores?.map(store => (
-                    <button
-                      key={store.id}
-                      className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
-                        selectedStore === store.id
-                          ? 'bg-primary-light text-white'
-                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                      }`}
-                      onClick={() => onStoreChange(store.id)}
-                    >
-                      {store.name}
-                    </button>
-                  ))}
-                </div>
-
                 <h3 className="text-sm font-medium text-gray-900 mt-6 mb-2">Диапазон цен</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -158,10 +137,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                           id="min-price-mobile"
                           className="pl-7 pr-3 py-2 w-full border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                           placeholder="0"
-                          value={priceRange[0]}
+                          value={minPrice}
                           onChange={handleMinPriceChange}
                           min={0}
-                          max={priceRange[1]}
+                          max={maxPriceValue}
                         />
                       </div>
                     </div>
@@ -176,9 +155,9 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                           id="max-price-mobile"
                           className="pl-7 pr-3 py-2 w-full border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                           placeholder={maxPrice.toString()}
-                          value={priceRange[1]}
+                          value={maxPriceValue}
                           onChange={handleMaxPriceChange}
-                          min={priceRange[0]}
+                          min={minPrice}
                           max={maxPrice}
                         />
                       </div>
@@ -186,13 +165,44 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                   </div>
                 </div>
 
+                {stores && onStoreChange && (
+                  <>
+                    <h3 className="text-sm font-medium text-gray-900 mt-6 mb-2">Магазины</h3>
+                    <div className="space-y-2">
+                      <button
+                        className={`px-3 py-1 rounded-full text-sm ${
+                          selectedStore === null
+                            ? 'bg-primary-light text-white'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                        onClick={() => onStoreChange(null)}
+                      >
+                        Все
+                      </button>
+                      {stores.map(store => (
+                        <button
+                          key={store.id}
+                          className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
+                            selectedStore === store.id
+                              ? 'bg-primary-light text-white'
+                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                          }`}
+                          onClick={() => onStoreChange(store.id)}
+                        >
+                          {store.name}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <div className="mt-6 flex justify-between">
                   <button
                     type="button"
                     className="text-sm text-primary hover:text-primary-dark"
                     onClick={clearFilters}
                   >
-                    Очистить все фильтры
+                    Очистить все
                   </button>
                   <button
                     type="button"
@@ -213,7 +223,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium text-gray-900">Фильтры</h3>
-            {(selectedCategory !== null || priceRange[0] > 0 || priceRange[1] < maxPrice) && (
+            {(selectedCategory !== null || minPrice > 0 || maxPriceValue < maxPrice) && (
               <button
                 type="button"
                 className="text-sm text-primary hover:text-primary-dark"
@@ -253,34 +263,36 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
             </div>
           </div>
 
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Магазины</h4>
-            <div className="space-y-2">
-              <button
-                className={`px-3 py-1 rounded-full text-sm ${
-                  selectedStore === null
-                    ? 'bg-primary-light text-white'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-                onClick={() => onStoreChange(null)}
-              >
-                Все
-              </button>
-              {stores?.map(store => (
+          {stores && onStoreChange && (
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Магазины</h4>
+              <div className="space-y-2">
                 <button
-                  key={store.id}
-                  className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
-                    selectedStore === store.id
+                  className={`px-3 py-1 rounded-full text-sm ${
+                    selectedStore === null
                       ? 'bg-primary-light text-white'
                       : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
-                  onClick={() => onStoreChange(store.id)}
+                  onClick={() => onStoreChange(null)}
                 >
-                  {store.name}
+                  Все
                 </button>
-              ))}
+                {stores.map(store => (
+                  <button
+                    key={store.id}
+                    className={`px-3 py-1 rounded-full text-sm capitalize ml-2 ${
+                      selectedStore === store.id
+                        ? 'bg-primary-light text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                    }`}
+                    onClick={() => onStoreChange(store.id)}
+                  >
+                    {store.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <h4 className="text-sm font-medium text-gray-900 mb-3">Диапазон цен</h4>
@@ -297,10 +309,10 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                       id="min-price"
                       className="pl-7 pr-3 py-2 w-full border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                       placeholder="0"
-                      value={priceRange[0]}
+                      value={minPrice}
                       onChange={handleMinPriceChange}
                       min={0}
-                      max={priceRange[1]}
+                      max={maxPriceValue}
                     />
                   </div>
                 </div>
@@ -315,9 +327,9 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
                       id="max-price"
                       className="pl-7 pr-3 py-2 w-full border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                       placeholder={maxPrice.toString()}
-                      value={priceRange[1]}
+                      value={maxPriceValue}
                       onChange={handleMaxPriceChange}
-                      min={priceRange[0]}
+                      min={minPrice}
                       max={maxPrice}
                     />
                   </div>

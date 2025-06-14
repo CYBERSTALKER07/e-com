@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import { CartItem, ShippingAddress, BillingAddress, OrderStatus } from '../types';
 

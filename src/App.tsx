@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 import { CartProvider } from './context/CartContext';
 import { OrderProvider } from './context/OrderContext';
 import { AuthProvider } from './context/AuthContext';
@@ -22,6 +24,14 @@ import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import StorePage from './pages/StorePage';
 
 function App() {
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+      easing: 'ease-out-cubic'
+    });
+  }, []);
+
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -118,13 +118,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, role: string = 'user') => {
     try {
+      // First, check if the user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        toast.error('An account with this email already exists');
+        return { error: new Error('User already exists') as AuthError };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
-            role: role
+            role: role,
+            created_at: new Date().toISOString()
           },
         },
       });
@@ -134,9 +147,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      // Profile creation is handled by the database trigger
       if (data.user) {
-        toast.success('Registration successful! Please check your email to confirm your account.');
+        // Create profile immediately after signup
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            full_name: fullName,
+            email: email,
+            role: role,
+            created_at: new Date().toISOString()
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          toast.error('Account created but profile setup failed');
+        } else {
+          toast.success('Registration successful! Please check your email to confirm your account.');
+        }
       }
       
       return { error: null };
@@ -295,15 +323,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('Error updating profile');
       return { error: error as Error };
     }
-  };
-
-  // Re-export the useAuth hook directly from this file
-  const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-      throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
   };
 
   return (

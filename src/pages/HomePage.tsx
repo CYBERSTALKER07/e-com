@@ -6,33 +6,61 @@ import ProductGrid from '../components/Products/ProductGrid';
 import { products } from '../data/products';
 
 const HomePage: React.FC = () => {
-  // Get featured products (first 4)
   const featuredProducts = products.slice(0, 4);
 
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-secondary-dark text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 flex flex-col items-center text-center">
-          <h1 className="text-3xl md:text-5xl font-bold mb-6">
-            Премиальная мужская мода в Ташкенте
-          </h1>
-          <p className="text-lg md:text-2xl mb-8 max-w-3xl">
-            Откройте для себя нашу коллекцию высококачественной мужской одежды. От деловых костюмов до повседневной одежды, улучшите свой стиль с нами. Бесплатная доставка при заказе от $100!
-          </p>
-          <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-            <Link
-              to="/products"
-              className="bg-white text-primary hover:bg-gray-100 px-8 py-3 rounded-md font-medium text-lg transition-colors"
-            >
-              Купить сейчас
-            </Link>
-            <Link
-              to="/products?category=suits"
-              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-primary px-8 py-3 rounded-md font-medium text-lg transition-colors"
-            >
-              Смотреть костюмы
-            </Link>
+      <section className="relative min-h-screen bg-gradient-to-r from-primary/5 to-secondary-dark/5">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-32">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8 text-center lg:text-left" data-aos="fade-right">
+              <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary-dark">
+                Discover Your Signature Style
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 max-w-2xl">
+                Curated collections of premium menswear that blend contemporary design with timeless elegance. Each piece tells a story of craftsmanship and style.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link to="/products" className="inline-flex items-center px-8 py-3 rounded-full bg-primary text-white font-medium hover:bg-primary-dark transition-all transform hover:scale-105">
+                  Shop Collection
+                  <ShoppingBag className="ml-2 h-5 w-5" />
+                </Link>
+                <button className="inline-flex items-center px-8 py-3 rounded-full border-2 border-primary text-primary font-medium hover:bg-primary hover:text-white transition-all">
+                  Learn More
+                </button>
+              </div>
+              <div className="flex items-center justify-center lg:justify-start space-x-8 pt-8">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">2000+</div>
+                  <div className="text-gray-600">Products</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">150+</div>
+                  <div className="text-gray-600">Brands</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">50k+</div>
+                  <div className="text-gray-600">Customers</div>
+                </div>
+              </div>
+            </div>
+            <div className="relative" data-aos="fade-left">
+              <div className="aspect-square rounded-2xl overflow-hidden">
+                <img 
+                  src="/hero-image.jpg" 
+                  alt="Featured Collection" 
+                  className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <div className="absolute -bottom-6 -left-6 bg-white rounded-lg shadow-xl p-4 animate-bounce-slow">
+                <div className="flex items-center space-x-2">
+                  <div className="bg-green-500 h-2 w-2 rounded-full"></div>
+                  <span className="text-sm font-medium">1,234 people shopping now</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
