@@ -332,6 +332,23 @@ const StorePage = () => {
                         value={newStore.phone || ''}
                         onChange={(e) => setNewStore({ ...newStore, phone: e.target.value })}
                         className="w-full p-2 border rounded"
+                        required
+                        placeholder="Номер телефона"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Адрес</label>
+                      <input
+                        type="text"
+                        value={newStore.address || ''}
+                        onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                        placeholder="Адрес магазина"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
                         <label className="block text-sm font-medium mb-1">Город</label>
                         <input
                           type="text"
