@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Store, CreateStoreDTO, UpdateStoreDTO } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -19,7 +20,8 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch all active stores
   useEffect(() => {
@@ -62,7 +64,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return null;
       }
 
-      const { data: existingStore, error: existingError } = await supabase
+      // Check store limits based on user's plan
+      const maxStores = profile?.max_stores || 1; // Default to 1 for free plan
+      if (userStores.length >= maxStores) {
+        toast.error('You have reached the maximum number of stores for your plan.');
+        // Redirect to upgrade page
+        navigate('/upgrade-plan');
+        return null;
+      }
+
+      const { data: existingStore } = await supabase
         .from('stores')
         .select('id')
         .eq('name', data.name)

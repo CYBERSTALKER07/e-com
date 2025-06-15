@@ -8,8 +8,10 @@ export interface UserProfile {
   full_name: string;
   email: string;
   role: string;
-  avatar_url?: string | null;
-  phone?: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  plan: 'free' | 'premium';
+  max_stores: number;
 }
 
 export interface AuthContextType {
@@ -78,7 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: user.id,
           full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
           email: user.email || '',
-          role: user.user_metadata.role || 'user'
+          role: user.user_metadata.role || 'user',
+          plan: user.user_metadata.plan || 'free',
+          max_stores: user.user_metadata.max_stores || 0
         };
         
         // Set admin status based on metadata
@@ -100,7 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: user.email || '',
             role: data.role,
             avatar_url: data.avatar_url,
-            phone: data.phone
+            phone: data.phone,
+            plan: data.plan || 'free',
+            max_stores: data.max_stores || 0
           };
           
           setProfile(userProfile);
@@ -205,7 +211,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: data.user.email || '',
             role: profile.role,
             avatar_url: profile.avatar_url,
-            phone: profile.phone
+            phone: profile.phone,
+            plan: profile.plan || 'free',
+            max_stores: profile.max_stores || 0
           });
           setIsAdmin(profile.role === 'admin');
         }

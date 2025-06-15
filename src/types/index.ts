@@ -29,6 +29,15 @@ export interface CartItem {
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 
+export type PaymentMethod = 'click' | 'credit-card' | 'cash';
+
+export interface PaymentDetails {
+  method: PaymentMethod;
+  status: 'pending' | 'completed' | 'failed';
+  transactionId?: string;
+  paymentId?: string;
+}
+
 export interface Order {
   id: string;
   customerId: string;
@@ -42,6 +51,7 @@ export interface Order {
   total: number;
   createdAt: string;
   estimatedDelivery: string;
+  payment?: PaymentDetails;
 }
 
 export interface ShippingAddress {

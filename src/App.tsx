@@ -14,6 +14,7 @@ import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import PaymentCompletePage from './pages/PaymentCompletePage';
 import OrdersPage from './pages/Orders/OrdersPage';
 import OrderDetailPage from './pages/Orders/OrderDetailPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
@@ -22,6 +23,7 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import StorePage from './pages/StorePage';
+import UpgradePlanPage from './pages/UpgradePlanPage';
 
 function App() {
   useEffect(() => {
@@ -45,6 +47,7 @@ function App() {
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/checkout/complete" element={<PaymentCompletePage />} />
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/orders/:id" element={<OrderDetailPage />} />
                 <Route path="/admin" element={<AdminDashboardPage />} />
@@ -53,6 +56,7 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/stores" element={<StorePage />} />
+                <Route path="/upgrade-plan" element={<UpgradePlanPage />} />
               </Routes>
             </OrderProvider>
           </CartProvider>
