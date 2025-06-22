@@ -4,17 +4,28 @@ import Sidebar from './Sidebar';
 import Footer from './Footer';
 import BottomNavigation from './BottomNavigation';
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface LayoutProps {
+  children: React.ReactNode;
+  authOnly?: boolean; // 👈 Add this prop
+}
+
+const Layout: React.FC<LayoutProps> = ({ children, authOnly = false }) => {
+  if (authOnly) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <main>{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Navbar />
       <div className="hidden md:block">
         <Sidebar />
       </div>
-      <div className="md:pl-[70px]"> {/* Padding only on medium and larger screens */}
-        <main>
-          {children}
-        </main>
+      <div className="md:pl-[70px]">
+        <main>{children}</main>
         <Footer />
       </div>
       <div className="md:hidden">

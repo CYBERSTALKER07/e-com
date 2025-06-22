@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Package } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -70,26 +70,35 @@ const RegisterPage: React.FC = () => {
   }
 
   return (
-    <Layout>
-      <div className="max-w-md mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-white rounded-lg shadow-md p-6">
+    <Layout authOnly>
+       <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <Package className="h-8 w-8 text-primary" />
+              <span className="ml-2 text-xl font-bold text-gray-900">Bagozza</span>
+            </Link>
+          </div>
+    <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-gray-50">
+      {/* Left: Registration Form */}
+      <div className="w-full md:w-1/2 max-w-3xl px-6 md:px-10 py-12">
+        <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center justify-center">
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center">
               <UserPlus className="h-6 w-6 mr-2 text-primary" />
               Создать аккаунт
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-2 text-sm">
               Зарегистрируйтесь, чтобы начать покупки
             </p>
           </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
+  
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name */}
+            <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                 Полное имя
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute left-3 top-2.5 pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -103,13 +112,14 @@ const RegisterPage: React.FC = () => {
                 />
               </div>
             </div>
-            
-            <div className="mb-4">
+  
+            {/* Email */}
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Электронная почта
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute left-3 top-2.5 pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -122,48 +132,47 @@ const RegisterPage: React.FC = () => {
                   disabled={isSubmitting}
                 />
               </div>
-              {process.env.NODE_ENV === 'development' && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Для тестирования: К вашему email будет добавлена метка времени, чтобы избежать ошибки "пользователь уже существует"
-                </p>
-              )}
             </div>
-            
-            <div className="mb-4">
+  
+            {/* Password */}
+            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Пароль
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute left-3 top-2.5 pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   type="password"
                   id="password"
-                  className={`w-full pl-10 pr-3 py-2 border ${passwordError && password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
+                  className={`w-full pl-10 pr-3 py-2 border ${
+                    passwordError && password ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Пароль должен содержать не менее 8 символов
-              </p>
+              <p className="text-xs text-gray-500 mt-1">Минимум 8 символов</p>
             </div>
-            
-            <div className="mb-6">
+  
+            {/* Confirm Password */}
+            <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Подтвердите пароль
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute left-3 top-2.5 pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   type="password"
                   id="confirmPassword"
-                  className={`w-full pl-10 pr-3 py-2 border ${passwordError && confirmPassword ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
+                  className={`w-full pl-10 pr-3 py-2 border ${
+                    passwordError && confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-primary`}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -174,22 +183,22 @@ const RegisterPage: React.FC = () => {
                 <p className="text-red-500 text-xs mt-1">{passwordError}</p>
               )}
             </div>
-            
-            {/* Admin toggle - only visible in development mode */}
+  
+            {/* Admin Toggle */}
             {process.env.NODE_ENV === 'development' && (
-              <div className="mb-6">
-                <label className="flex items-center">
+              <div>
+                <label className="flex items-center text-sm text-gray-700">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    className="h-4 w-4 text-primary border-gray-300 rounded"
                     checked={isAdmin}
                     onChange={(e) => setIsAdmin(e.target.checked)}
                   />
-                  <span className="ml-2 text-sm text-gray-700">Зарегистрироваться как Администратор (Только для разработки)</span>
+                  <span className="ml-2">Зарегистрироваться как админ</span>
                 </label>
               </div>
             )}
-            
+  
             <button
               type="submit"
               className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors flex justify-center items-center"
@@ -198,18 +207,29 @@ const RegisterPage: React.FC = () => {
               {isSubmitting ? <LoadingSpinner size="sm" color="white" /> : 'Создать аккаунт'}
             </button>
           </form>
-
-          <div className="mt-6 text-center">
+  
+          <div className="mt-6 text-center text-sm">
             <p className="text-gray-600">
               Уже есть аккаунт?{' '}
-              <Link to="/login" className="text-primary hover:text-primary-dark">
+              <Link to="/login" className="text-primary hover:text-primary-dark font-medium">
                 Войти
               </Link>
             </p>
           </div>
         </div>
       </div>
-    </Layout>
+  
+      {/* Right: Image */}
+      <div className="hidden w-full md:block md:w-1/2 h-full">
+        <img
+          src="https://i.pinimg.com/736x/30/a3/55/30a355d42f5a0235cf74d7000f2d4108.jpg"
+          alt="Zara Style"
+          className="object-cover rounded-[100px] shadow-2xl w-full h-[700px]"
+        />
+      </div>
+    </div>
+  </Layout>
+  
   );
 };
 

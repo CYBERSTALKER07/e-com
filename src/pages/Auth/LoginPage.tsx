@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogIn, Mail, Lock } from 'lucide-react';
+import { LogIn, Mail, Lock, Package } from 'lucide-react';
 import Layout from '../../components/Layout/Layout';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/UI/LoadingSpinner';
@@ -46,104 +46,122 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <Layout>
-      <div className="max-w-md mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center justify-center">
-              <LogIn className="h-6 w-6 mr-2 text-primary" />
-              Вход в систему
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Введите свои учетные данные для доступа к аккаунту
-            </p>
+    <Layout authOnly>
+       <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <Package className="h-8 w-8 text-primary" />
+              <span className="ml-2 text-xl font-bold text-gray-900">Bagozza</span>
+            </Link>
           </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-              {error}
+      <div className="min-h-screen  flex flex-col md:flex-row items-center justify-center bg-gray-50">
+     
+        {/* Left: Login Form */}
+        <div className="w-full md:w-1/2 max-w-3xl px-6 md:px-10 py-12">
+          <div className="bg-white rounded-2xl shadow-lg p-8 sm:p-10">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center justify-center">
+                <LogIn className="h-6 w-6 mr-2 text-primary" />
+                Вход в систему
+              </h1>
+              <p className="text-gray-600 mt-2 text-sm">
+                Введите свои учетные данные для доступа к аккаунту
+              </p>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Электронная почта
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                />
+  
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+                {error}
               </div>
-            </div>
-            
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-1">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Пароль
+            )}
+  
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Электронная почта
                 </label>
-                <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-dark">
-                  Забыли пароль?
-                </Link>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                <div className="relative">
+                  <div className="absolute left-3 top-2.5 pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
                 </div>
-                <input
-                  type="password"
-                  id="password"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                />
               </div>
+  
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Пароль
+                  </label>
+                  <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-dark">
+                    Забыли пароль?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <div className="absolute left-3 top-2.5 pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    id="password"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+  
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors flex justify-center items-center"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <LoadingSpinner size="sm" color="white" /> : 'Войти'}
+              </button>
+            </form>
+  
+            <div className="mt-6 text-center text-sm">
+              <p className="text-gray-600">
+                Нет аккаунта?{' '}
+                <Link to="/register" className="text-primary hover:text-primary-dark font-medium">
+                  Зарегистрироваться
+                </Link>
+              </p>
             </div>
-            
-            <button
-              type="submit"
-              className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors flex justify-center items-center"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <LoadingSpinner size="sm" color="white" /> : 'Войти'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              Нет аккаунта?{' '}
-              <Link to="/register" className="text-primary hover:text-primary-dark">
-                Зарегистрироваться
-              </Link>
-            </p>
+  
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-8 p-3 bg-gray-50 rounded-md text-xs text-gray-600 space-y-1">
+                <p><strong>Тестирование:</strong> если вы регистрировались с email+timestamp, введите его точно.</p>
+                <p>Пример: <code>user+1234567890@example.com</code></p>
+              </div>
+            )}
           </div>
-
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-8 p-3 bg-gray-50 rounded-md">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Тестирование</h3>
-              <p className="text-xs text-gray-600 mb-1">
-                Если вы зарегистрировались с модифицированным email, используйте его для входа.
-              </p>
-              <p className="text-xs text-gray-600">
-                Например: если вы зарегистрировались как "user@example.com", возможно, вам нужно войти с "user+1234567890@example.com"
-              </p>
-            </div>
-          )}
+        </div>
+  
+        {/* Right: Image */}
+        <div className="hidden w-full md:block md:w-1/2 h-full">
+          <img
+            src="https://i.pinimg.com/736x/02/6d/50/026d50c426b1c334ba46c0f2ba1ac843.jpg"
+            alt="Zara Login"
+            className="object-cover rounded-[100px] w-full h-[700px]"
+          />
         </div>
       </div>
     </Layout>
   );
 };
+  
 
 export default LoginPage;

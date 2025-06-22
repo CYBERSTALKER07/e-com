@@ -25,74 +25,81 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-white"
-    >
-      <View className="flex-1 p-6 justify-center">
-        <View className="mb-8">
-          <Text className="text-2xl font-bold text-gray-900 text-center">Sign In</Text>
-          <Text className="mt-2 text-gray-600 text-center">
-            Enter your credentials to access your account
-          </Text>
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    className="flex-1 bg-white justify-center items-center px-6"
+  >
+    <View className="w-full max-w-md bg-white p-6 rounded-2xl shadow-xl space-y-8">
+      {/* Header */}
+      <View className="space-y-2">
+        <Text className="text-3xl font-bold text-gray-900 text-center">Sign In</Text>
+        <Text className="text-center text-gray-600">
+          Enter your credentials to access your account
+        </Text>
+      </View>
+  
+      {/* Form Fields */}
+      <View className="space-y-5">
+        {/* Email */}
+        <View>
+          <Text className="text-sm font-medium text-gray-700 mb-1">Email Address</Text>
+          <View className="relative">
+            <View className="absolute left-3 top-3 z-10">
+              <Mail size={20} color="#9CA3AF" />
+            </View>
+            <TextInput
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 pl-10 bg-gray-50"
+              placeholder="Enter your email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
         </View>
-
-        <View className="space-y-6">
-          <View>
-            <Text className="text-sm font-medium text-gray-700 mb-1">Email Address</Text>
-            <View className="relative">
-              <View className="absolute left-3 top-3 z-10">
-                <Mail size={20} color="#9CA3AF" />
-              </View>
-              <TextInput
-                className="w-full bg-white border border-gray-300 rounded-md px-4 py-2 pl-10"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-          </View>
-
-          <View>
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="text-sm font-medium text-gray-700">Password</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                <Text className="text-sm text-[#6B4423]">Forgot password?</Text>
-              </TouchableOpacity>
-            </View>
-            <View className="relative">
-              <View className="absolute left-3 top-3 z-10">
-                <Lock size={20} color="#9CA3AF" />
-              </View>
-              <TextInput
-                className="w-full bg-white border border-gray-300 rounded-md px-4 py-2 pl-10"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            className="bg-[#6B4423] py-3 rounded-md"
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-          >
-            <Text className="text-white text-center font-medium">
-              {isSubmitting ? 'Signing in...' : 'Sign In'}
-            </Text>
-          </TouchableOpacity>
-
-          <View className="flex-row justify-center">
-            <Text className="text-gray-600">Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text className="text-[#6B4423] font-medium">Sign up</Text>
+  
+        {/* Password */}
+        <View>
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-sm font-medium text-gray-700">Password</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+              <Text className="text-sm text-[#6B4423]">Forgot password?</Text>
             </TouchableOpacity>
+          </View>
+          <View className="relative">
+            <View className="absolute left-3 top-3 z-10">
+              <Lock size={20} color="#9CA3AF" />
+            </View>
+            <TextInput
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 pl-10 bg-gray-50"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
           </View>
         </View>
       </View>
-    </KeyboardAvoidingView>
+  
+      {/* Submit Button */}
+      <TouchableOpacity
+        className="bg-[#6B4423] py-3 rounded-full"
+        onPress={handleSubmit}
+        disabled={isSubmitting}
+      >
+        <Text className="text-white text-center font-semibold text-base">
+          {isSubmitting ? 'Signing in...' : 'Sign In'}
+        </Text>
+      </TouchableOpacity>
+  
+      {/* Bottom Link */}
+      <View className="flex-row justify-center">
+        <Text className="text-gray-600">Don't have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <Text className="text-[#6B4423] font-semibold">Sign up</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </KeyboardAvoidingView>
+  
   );
 }
