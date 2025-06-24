@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Register: undefined;
   Account: undefined;
   Admin: undefined;
+  PaymentComplete: undefined; // Add splash screen completion route
 };
 
 export type BottomTabParamList = {

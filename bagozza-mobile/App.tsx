@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 
 // Import navigation types
 import { RootStackParamList } from './src/types/navigation';
@@ -20,6 +22,9 @@ import RegisterPage from './src/pages/Auth/RegisterPage';
 import AdminPage from './src/pages/Admin/AdminPage';
 import PaymentCompletePage from './src/pages/PaymentCompletePage';
 
+// Prevent splash screen from auto-hiding until app is ready
+SplashScreen.preventAutoHideAsync();
+
 // Configure theme to match web version
 const theme = {
   ...DefaultTheme,
@@ -35,26 +40,54 @@ const theme = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
+  // Manage splash visibility
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // ...load any assets, fonts, or data here if needed...
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
+    return null;
+  }
+
   return (
-    <SafeAreaProvider>
-      <PaperProvider theme={theme}>
-        <StatusBar style="auto" />
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
-            {/* Main tabbed navigation */}
-            <Stack.Screen name="Main" component={BottomNavigation} />
-            
-            {/* Other screens */}
-            <Stack.Screen name="ProductDetail" component={ProductDetailPage} />
-            <Stack.Screen name="Checkout" component={CheckoutPage} />
-            <Stack.Screen name="OrderDetail" component={OrderDetailPage} />
-            <Stack.Screen name="Login" component={LoginPage} />
-            <Stack.Screen name="Register" component={RegisterPage} />
-            <Stack.Screen name="Admin" component={AdminPage} />
-            <Stack.Screen name="PaymentComplete" component={PaymentCompletePage} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </PaperProvider>
-    </SafeAreaProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <SafeAreaProvider>
+        <PaperProvider theme={theme}>
+          <StatusBar style="auto" />
+          <NavigationContainer>
+            <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
+              {/* Main tabbed navigation */}
+              <Stack.Screen name="Main" component={BottomNavigation} />
+              
+              {/* Other screens */}
+              <Stack.Screen name="ProductDetail" component={ProductDetailPage} />
+              <Stack.Screen name="Checkout" component={CheckoutPage} />
+              <Stack.Screen name="OrderDetail" component={OrderDetailPage} />
+              <Stack.Screen name="Login" component={LoginPage} />
+              <Stack.Screen name="Register" component={RegisterPage} />
+              <Stack.Screen name="Admin" component={AdminPage} />
+              <Stack.Screen name="PaymentComplete" component={PaymentCompletePage} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </PaperProvider>
+      </SafeAreaProvider>
+    </View>
   );
 }
