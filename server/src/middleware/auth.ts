@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '../../../src/types/supabase';
 import dotenv from 'dotenv';
+import { Database } from '../../../src/types/supabase';
 
 dotenv.config();
 
@@ -16,21 +16,16 @@ if (!supabaseUrl || !supabaseKey) {
 // Create Supabase client for auth validation
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
-// User profile interface (matching frontend)
-export interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  role: string;
-  avatar_url: string | null;
-  phone: string | null;
-  plan: 'free' | 'premium';
-  max_stores: number;
-}
-
 // Interface for enhanced request with user data
 export interface AuthRequest extends Request {
-  user: UserProfile | null;
+  user: {
+    id: string;
+    role: string;
+    email: string;
+    full_name: string;
+    plan?: 'free' | 'premium';
+    max_stores?: number;
+  } | null;
   token: string | null;
 }
 
@@ -60,50 +55,32 @@ export const authenticate = async (
     }
 
     // Verify JWT using Supabase
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (authError || !authData.user) {
+    if (error || !user) {
       (req as AuthRequest).user = null;
       (req as AuthRequest).token = null;
       return next();
     }
 
-    // Get the user's profile from the profiles table
-    const { data: profileData, error: profileError } = await supabase
+    // Get additional user data from profiles table
+    const { data: profile } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('id', user.id)
       .single();
 
-    if (profileError) {
-      console.warn(`Profile not found for user ${authData.user.id}:`, profileError);
-      
-      // Create basic profile from auth data if profile doesn't exist
-      (req as AuthRequest).user = {
-        id: authData.user.id,
-        full_name: authData.user.user_metadata.full_name || authData.user.email?.split('@')[0] || 'User',
-        email: authData.user.email || '',
-        role: authData.user.user_metadata.role || 'user',
-        avatar_url: null,
-        phone: null,
-        plan: 'free',
-        max_stores: 0
-      };
-    } else {
-      // Set full profile in request
-      (req as AuthRequest).user = {
-        id: profileData.id,
-        full_name: profileData.full_name,
-        email: authData.user.email || '',
-        role: profileData.role,
-        avatar_url: profileData.avatar_url,
-        phone: profileData.phone,
-        plan: profileData.plan || 'free',
-        max_stores: profileData.max_stores || 0
-      };
-    }
-
+    // Set user data in request
+    (req as AuthRequest).user = {
+      id: user.id,
+      email: user.email || '',
+      role: profile?.role || user.user_metadata.role || 'user',
+      full_name: profile?.full_name || user.user_metadata.full_name || '',
+      plan: profile?.plan || user.user_metadata.plan || 'free',
+      max_stores: profile?.max_stores || user.user_metadata.max_stores || 1
+    };
     (req as AuthRequest).token = token;
+
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
@@ -180,90 +157,13 @@ export const requireStoreOwner = (storeIdParam: string = 'id') => {
       }
 
       if (data.owner_id !== user.id) {
-        return res.status(403).json({ error: 'Access denied - you must be the store owner' });
+        return res.status(403).json({ error: 'Access denied' });
       }
 
       next();
     } catch (error) {
       console.error('Store owner check error:', error);
       res.status(500).json({ error: 'Server error checking store ownership' });
-    }
-  };
-};
-
-/**
- * Middleware to check if user can access order
- * Users can access their own orders, store owners can access orders for their stores,
- * and admins can access all orders
- */
-export const requireOrderAccess = (orderIdParam: string = 'id') => {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const user = (req as AuthRequest).user;
-      if (!user) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const orderId = req.params[orderIdParam];
-      if (!orderId) {
-        return res.status(400).json({ error: 'Order ID is required' });
-      }
-
-      // Admins can access any order
-      if (user.role === 'admin') {
-        return next();
-      }
-
-      // Get the order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          items:items
-        `)
-        .eq('id', orderId)
-        .single();
-
-      if (orderError || !order) {
-        return res.status(404).json({ error: 'Order not found' });
-      }
-
-      // User can access their own orders
-      if (order.customer_id === user.id) {
-        return next();
-      }
-
-      // For store owners, check if the order contains products from their stores
-      // First get all stores owned by the user
-      const { data: stores, error: storesError } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('owner_id', user.id);
-
-      if (storesError) {
-        return res.status(500).json({ error: 'Error checking store ownership' });
-      }
-
-      if (!stores || stores.length === 0) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      // Check if any order item belongs to the user's stores
-      const storeIds = stores.map(store => store.id);
-      const orderItems = order.items as any[];
-      
-      const hasAccessToOrder = orderItems.some(item => 
-        storeIds.includes(item.store_id)
-      );
-
-      if (!hasAccessToOrder) {
-        return res.status(403).json({ error: 'Access denied - you do not have access to this order' });
-      }
-
-      next();
-    } catch (error) {
-      console.error('Order access check error:', error);
-      res.status(500).json({ error: 'Server error checking order access' });
     }
   };
 };

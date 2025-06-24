@@ -1,8 +1,22 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Session, User, AuthError } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { toast } from 'react-hot-toast';
-import { fetchUserProfile, updateUserProfile } from '../services/api/auth';
+import { Session, User, AuthError, createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import { Alert } from 'react-native';
+
+// Get Supabase configuration from environment variables
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || 'https://your-supabase-url.supabase.co';
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || 'your-anon-key';
+
+// Create a custom Supabase client for React Native
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 
 export interface UserProfile {
   id: string;
@@ -26,11 +40,13 @@ export interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  updatePassword: (password: string) => Promise<{ error: AuthError | null }>;
   updateProfile: (data: Partial<UserProfile>) => Promise<{ error: Error | null }>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// API URL for mobile backend communication
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -88,41 +104,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           max_stores: user.user_metadata.max_stores || 1
         };
         
-        // Set admin status based on metadata
-        const isAdminUser = user.user_metadata.role === 'admin';
-        setIsAdmin(isAdminUser);
+        setIsAdmin(user.user_metadata.role === 'admin');
         setProfile(basicProfile);
 
         try {
-          // Fetch profile from backend API
-          const apiProfile = await fetchUserProfile();
-          setProfile(apiProfile);
-          setIsAdmin(apiProfile.role === 'admin');
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-          console.warn('Could not fetch profile from API, using basic profile:', error);
-          // Fall back to Supabase direct query if API fails
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+          // Try to fetch profile from backend API
+          const { session } = (await supabase.auth.getSession()).data;
+          const response = await fetch(`${API_URL}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${session?.access_token || ''}`,
+              'Content-Type': 'application/json',
+            },
+          });
 
-          if (!error && data) {
-            const userProfile: UserProfile = {
-              id: data.id,
-              full_name: data.full_name,
-              email: user.email || '',
-              role: data.role,
-              avatar_url: data.avatar_url,
-              phone: data.phone,
-              plan: data.plan || 'free',
-              max_stores: data.max_stores || 1
-            };
-            
-            setProfile(userProfile);
-            setIsAdmin(data.role === 'admin');
+          if (response.ok) {
+            const apiProfile = await response.json();
+            setProfile({
+              id: apiProfile.id,
+              full_name: apiProfile.full_name,
+              email: apiProfile.email || user.email || '',
+              role: apiProfile.role,
+              avatar_url: apiProfile.avatar_url,
+              phone: apiProfile.phone,
+              plan: apiProfile.plan || 'free',
+              max_stores: apiProfile.max_stores || 1
+            });
+            setIsAdmin(apiProfile.role === 'admin');
+          } else {
+            // Fallback to direct database query
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select()
+              .eq('id', user.id)
+              .single();
+              
+            if (profileData) {
+              setProfile({
+                ...basicProfile,
+                full_name: profileData.full_name,
+                role: profileData.role,
+                avatar_url: profileData.avatar_url,
+                phone: profileData.phone,
+                plan: profileData.plan || 'free',
+                max_stores: profileData.max_stores || 1
+              });
+              setIsAdmin(profileData.role === 'admin');
+            }
           }
+        } catch (error) {
+          console.error('Error fetching profile:', error);
         }
       } catch (error) {
         console.error('Error in profile fetch process:', error);
@@ -136,18 +166,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, role: string = 'user') => {
     try {
-      // First, check if the user already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      if (existingUser) {
-        toast.error('An account with this email already exists');
-        return { error: new Error('User already exists') as AuthError };
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -161,7 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        toast.error(error.message);
+        Alert.alert('Error', error.message);
         return { error };
       }
 
@@ -181,16 +199,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (profileError) {
           console.error('Error creating profile:', profileError);
-          toast.error('Account created but profile setup failed');
+          Alert.alert('Warning', 'Account created but profile setup failed');
         } else {
-          toast.success('Registration successful! Please check your email to confirm your account.');
+          Alert.alert('Success', 'Registration successful! Please check your email to confirm your account.');
         }
       }
       
       return { error: null };
     } catch (error) {
       console.error('Error during sign up:', error);
-      toast.error('An unexpected error occurred during sign up.');
+      Alert.alert('Error', 'An unexpected error occurred during sign up');
       return { error: error as AuthError };
     }
   };
@@ -203,15 +221,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        toast.error(error.message);
+        Alert.alert('Error', error.message);
         return { error };
       }
 
-      toast.success('Signed in successfully!');
       return { error: null };
     } catch (error) {
       console.error('Error during sign in:', error);
-      toast.error('An unexpected error occurred during sign in.');
+      Alert.alert('Error', 'An unexpected error occurred during sign in');
       return { error: error as AuthError };
     }
   };
@@ -219,49 +236,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      toast.success('Signed out successfully');
     } catch (error) {
       console.error('Error during sign out:', error);
-      toast.error('An error occurred during sign out');
+      Alert.alert('Error', 'An error occurred during sign out');
     }
   };
 
   const resetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
 
       if (error) {
-        toast.error(error.message);
+        Alert.alert('Error', error.message);
         return { error };
       }
 
-      toast.success('Password reset instructions sent to your email');
+      Alert.alert('Success', 'Password reset instructions sent to your email');
       return { error: null };
     } catch (error) {
       console.error('Error during password reset:', error);
-      toast.error('An unexpected error occurred');
-      return { error: error as AuthError };
-    }
-  };
-
-  const updatePassword = async (password: string) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
-
-      if (error) {
-        toast.error(error.message);
-        return { error };
-      }
-
-      toast.success('Password updated successfully');
-      return { error: null };
-    } catch (error) {
-      console.error('Error updating password:', error);
-      toast.error('An unexpected error occurred');
+      Alert.alert('Error', 'An unexpected error occurred');
       return { error: error as AuthError };
     }
   };
@@ -272,17 +266,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User not authenticated');
       }
 
+      // Try to update through API first
       try {
-        // Try to update profile through backend API first
-        const apiProfile = await updateUserProfile(data);
+        const { session } = (await supabase.auth.getSession()).data;
+        if (!session) throw new Error('No active session');
+        
+        const response = await fetch(`${API_URL}/auth/me`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update profile via API');
+        }
+        
+        const apiProfile = await response.json();
         setProfile(prev => prev ? { ...prev, ...apiProfile } : apiProfile);
         setIsAdmin(apiProfile.role === 'admin');
-        toast.success('Profile updated successfully');
         return { error: null };
       } catch (apiError) {
-        console.warn('Could not update profile through API, falling back to direct update:', apiError);
+        console.warn('API update failed, falling back to direct update:', apiError);
         
-        // Fall back to direct Supabase update if API fails
         // Always update user metadata
         const { error: metadataError } = await supabase.auth.updateUser({
           data: {
@@ -311,24 +319,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .upsert(updates);
 
           if (dbError) {
-            throw new Error('Could not update profile in database: ' + dbError.message);
+            throw new Error('Could not update profile in database');
           }
         }
         
-        // Update local profile state
+        // Update local state
         setProfile(prev => prev ? { ...prev, ...data } : null);
         if (data.role === 'admin') {
           setIsAdmin(true);
         } else if (data.role === 'user') {
           setIsAdmin(false);
         }
-        
-        toast.success('Profile updated successfully');
-        return { error: null };
       }
+      
+      Alert.alert('Success', 'Profile updated successfully');
+      return { error: null };
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Error updating profile');
+      Alert.alert('Error', 'Failed to update profile');
       return { error: error as Error };
     }
   };
@@ -345,7 +353,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signIn,
       signOut,
       resetPassword,
-      updatePassword,
       updateProfile,
     }}>
       {children}

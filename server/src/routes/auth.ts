@@ -10,10 +10,7 @@ interface RequestWithDB extends Request {
 
 const router = Router();
 
-/**
- * Register a new user
- * POST /api/auth/register
- */
+// Sign up endpoint
 router.post('/register', async (req: RequestWithDB, res: Response) => {
   try {
     const { email, password, full_name, role = 'user' } = req.body;
@@ -24,15 +21,16 @@ router.post('/register', async (req: RequestWithDB, res: Response) => {
     
     const { db } = req;
     
-    // Create new user with Supabase auth
+    // Create new user
     const { data, error } = await db.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email for simplicity
+      email_confirm: true, // Auto-confirm email for now
       user_metadata: {
         full_name,
         role,
-        created_at: new Date().toISOString()
+        plan: 'free',
+        max_stores: 1
       }
     });
     
@@ -48,34 +46,25 @@ router.post('/register', async (req: RequestWithDB, res: Response) => {
           id: data.user.id,
           full_name,
           role,
-          avatar_url: null,
-          phone: null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
           plan: 'free',
-          max_stores: 1 // Default to 1 store for free plan
+          max_stores: 1
         });
         
       if (profileError) {
         console.error('Failed to create profile:', profileError);
-        // Don't fail registration if profile creation fails
+        // Don't fail the registration if profile creation fails
       }
     }
     
-    return res.status(201).json({ 
-      message: 'User registered successfully',
-      user: data.user
-    });
+    return res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ error: 'Registration failed' });
   }
 });
 
-/**
- * Login user
- * POST /api/auth/login
- */
+// Sign in endpoint (for reference - actual auth is handled by Supabase client-side)
 router.post('/login', async (req: RequestWithDB, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -88,47 +77,24 @@ router.post('/login', async (req: RequestWithDB, res: Response) => {
     
     const { data, error } = await db.auth.signInWithPassword({
       email,
-      password,
+      password
     });
     
     if (error) {
       return res.status(401).json({ error: error.message });
     }
     
-    // Get user's profile
-    const { data: profileData, error: profileError } = await db
+    // Get profile data
+    const { data: profile } = await db
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single();
-      
-    // If profile doesn't exist, create a basic one
-    if (profileError) {
-      const defaultProfile = {
-        id: data.user.id,
-        full_name: data.user.user_metadata.full_name || data.user.email?.split('@')[0] || 'User',
-        role: data.user.user_metadata.role || 'user',
-        avatar_url: null,
-        phone: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        plan: 'free',
-        max_stores: 1
-      };
-      
-      await db.from('profiles').upsert(defaultProfile);
-      
-      return res.status(200).json({
-        user: data.user,
-        profile: defaultProfile,
-        session: data.session
-      });
-    }
     
     return res.status(200).json({
       user: data.user,
-      profile: profileData,
-      session: data.session
+      session: data.session,
+      profile
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -136,16 +102,12 @@ router.post('/login', async (req: RequestWithDB, res: Response) => {
   }
 });
 
-/**
- * Get current user profile
- * GET /api/auth/me
- */
+// Get current user profile
 router.get('/me', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { db } = req;
     
-    // Get user profile from database
     const { data: profile, error } = await db
       .from('profiles')
       .select('*')
@@ -156,43 +118,33 @@ router.get('/me', requireAuth, async (req: RequestWithDB & AuthRequest, res: Res
       return res.status(404).json({ error: 'Profile not found' });
     }
     
-    // Get user from auth
-    const { data: userData, error: userError } = await db.auth.admin.getUserById(userId as string);
-    
-    if (userError) {
-      console.error('Error fetching user data:', userError);
-    }
-    
-    return res.status(200).json({
-      profile,
-      user: userData?.user || null
-    });
+    return res.status(200).json(profile);
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return res.status(500).json({ error: 'Failed to fetch profile' });
   }
 });
 
-/**
- * Update user profile
- * PUT /api/auth/profile
- */
-router.put('/profile', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
+// Update user profile
+router.put('/me', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { full_name, avatar_url, phone } = req.body;
     const { db } = req;
     
     // Update user metadata first
-    await db.auth.admin.updateUserById(
+    const { error: metadataError } = await db.auth.admin.updateUserById(
       userId as string,
       {
         user_metadata: {
           full_name,
-          updated_at: new Date().toISOString()
         }
       }
     );
+    
+    if (metadataError) {
+      console.warn('Failed to update user metadata:', metadataError);
+    }
     
     // Update profile in database
     const { data, error } = await db
@@ -218,17 +170,14 @@ router.put('/profile', requireAuth, async (req: RequestWithDB & AuthRequest, res
   }
 });
 
-/**
- * Change password
- * POST /api/auth/change-password
- */
+// Change password endpoint
 router.post('/change-password', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
   try {
-    const { current_password, new_password } = req.body;
+    const { new_password } = req.body;
     const { db } = req;
     
-    if (!current_password || !new_password) {
-      return res.status(400).json({ error: 'Current and new password are required' });
+    if (!new_password) {
+      return res.status(400).json({ error: 'New password is required' });
     }
     
     // Update user password (This requires service role key)
@@ -248,61 +197,78 @@ router.post('/change-password', requireAuth, async (req: RequestWithDB & AuthReq
   }
 });
 
-/**
- * Request password reset
- * POST /api/auth/reset-password
- */
-router.post('/reset-password', async (req: RequestWithDB, res: Response) => {
+// Admin: Get all users (requires admin role)
+router.get('/users', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
   try {
-    const { email, reset_url } = req.body;
+    // Check if user is admin
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
     const { db } = req;
     
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-    
-    const { error } = await db.auth.resetPasswordForEmail(
-      email, 
-      { redirectTo: reset_url || `${process.env.FRONTEND_URL}/reset-password` }
-    );
-    
+    // Get all profiles
+    const { data: profiles, error } = await db
+      .from('profiles')
+      .select('*');
+      
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(500).json({ error: 'Failed to fetch users' });
     }
     
-    return res.status(200).json({ message: 'Password reset instructions sent' });
+    return res.status(200).json(profiles);
   } catch (error) {
-    console.error('Error requesting password reset:', error);
-    return res.status(500).json({ error: 'Failed to send reset instructions' });
+    console.error('Error fetching users:', error);
+    return res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
-/**
- * Refresh session token
- * POST /api/auth/refresh-token
- */
-router.post('/refresh-token', async (req: RequestWithDB, res: Response) => {
+// Admin: Update user role (requires admin role)
+router.put('/users/:userId/role', requireAuth, async (req: RequestWithDB & AuthRequest, res: Response) => {
   try {
-    const { refresh_token } = req.body;
+    // Check if user is admin
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { userId } = req.params;
+    const { role } = req.body;
     const { db } = req;
     
-    if (!refresh_token) {
-      return res.status(400).json({ error: 'Refresh token is required' });
+    if (!role || !['user', 'admin', 'store_owner'].includes(role)) {
+      return res.status(400).json({ error: 'Valid role is required' });
     }
     
-    const { data, error } = await db.auth.refreshSession({ refresh_token });
+    // Update user metadata
+    const { error: metadataError } = await db.auth.admin.updateUserById(
+      userId,
+      {
+        user_metadata: {
+          role
+        }
+      }
+    );
     
+    if (metadataError) {
+      console.warn('Failed to update user metadata:', metadataError);
+    }
+    
+    // Update profile in database
+    const { data, error } = await db
+      .from('profiles')
+      .update({ role })
+      .eq('id', userId)
+      .select()
+      .single();
+      
     if (error) {
-      return res.status(401).json({ error: error.message });
+      return res.status(400).json({ error: 'Failed to update user role' });
     }
     
-    return res.status(200).json({
-      session: data.session,
-      user: data.user
-    });
+    return res.status(200).json(data);
   } catch (error) {
-    console.error('Error refreshing token:', error);
-    return res.status(500).json({ error: 'Failed to refresh token' });
+    console.error('Error updating user role:', error);
+    return res.status(500).json({ error: 'Failed to update user role' });
   }
 });
 
