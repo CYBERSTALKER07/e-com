@@ -4,11 +4,15 @@ import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../../src/types/supabase';
 
+// Import authentication middleware
+import { authenticate } from './middleware/auth';
+
 // Import routes
 import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import storeRoutes from './routes/stores';
 import profileRoutes from './routes/profiles';
+import authRoutes from './routes/auth';
 
 // Load environment variables
 dotenv.config();
@@ -37,7 +41,11 @@ app.use((req, _, next) => {
   next();
 });
 
+// Apply authentication middleware to all routes
+app.use(authenticate);
+
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/stores', storeRoutes);

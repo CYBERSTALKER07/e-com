@@ -2,16 +2,16 @@ import { Router } from 'express';
 import type { Request } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../../../src/types/supabase';
+import { AuthRequest, requireAuth, requireStoreOwner, requireAdmin } from '../middleware/auth';
 
-// Type for enhanced request with Supabase
-interface AuthRequest extends Request {
+interface RequestWithDB extends Request {
   db: SupabaseClient<Database>;
 }
 
 const router = Router();
 
-// GET all stores
-router.get('/', async (req: AuthRequest, res) => {
+// GET all stores - public
+router.get('/', async (req: RequestWithDB, res) => {
   try {
     const { db } = req;
     const { data, error } = await db
@@ -27,8 +27,8 @@ router.get('/', async (req: AuthRequest, res) => {
   }
 });
 
-// GET store by ID
-router.get('/:id', async (req: AuthRequest, res) => {
+// GET store by ID - public
+router.get('/:id', async (req: RequestWithDB, res) => {
   try {
     const { id } = req.params;
     const { db } = req;
@@ -49,11 +49,16 @@ router.get('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// GET store by owner ID
-router.get('/owner/:ownerId', async (req: AuthRequest, res) => {
+// GET store by owner ID - requires authentication
+router.get('/owner/:ownerId', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
   try {
     const { ownerId } = req.params;
     const { db } = req;
+    
+    // Users can only see their own stores unless they're admins
+    if (req.user?.id !== ownerId && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     
     const { data, error } = await db
       .from('stores')
@@ -69,11 +74,63 @@ router.get('/owner/:ownerId', async (req: AuthRequest, res) => {
   }
 });
 
-// POST create new store
-router.post('/', async (req: AuthRequest, res) => {
+// GET current user's stores - requires authentication
+router.get('/me/stores', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
+  try {
+    const userId = req.user?.id;
+    const { db } = req;
+    
+    const { data, error } = await db
+      .from('stores')
+      .select('*')
+      .eq('owner_id', userId);
+    
+    if (error) throw error;
+    
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Error fetching user stores:', error);
+    return res.status(500).json({ error: 'Failed to fetch user stores' });
+  }
+});
+
+// POST create new store - requires authentication
+router.post('/', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
   try {
     const { db } = req;
-    const storeData = req.body;
+    const userId = req.user?.id;
+    
+    // Check store limit based on user's plan - example
+    const { data: profile } = await db
+      .from('profiles')
+      .select('max_stores, plan')
+      .eq('id', userId)
+      .single();
+      
+    const maxStores = profile?.max_stores || 1;  // Default to 1 store for free plan
+    
+    // Check how many stores user already has
+    const { data: existingStores, error: countError } = await db
+      .from('stores')
+      .select('id')
+      .eq('owner_id', userId);
+      
+    if (countError) throw countError;
+    
+    if (existingStores && existingStores.length >= maxStores) {
+      return res.status(403).json({ 
+        error: 'Store limit reached for your plan',
+        currentStores: existingStores.length,
+        maxStores
+      });
+    }
+    
+    // Add owner_id to store data
+    const storeData = {
+      ...req.body,
+      owner_id: userId,
+      is_active: true  // Default to active when creating
+    };
     
     const { data, error } = await db
       .from('stores')
@@ -90,8 +147,8 @@ router.post('/', async (req: AuthRequest, res) => {
   }
 });
 
-// PUT update store
-router.put('/:id', async (req: AuthRequest, res) => {
+// PUT update store - requires store owner or admin
+router.put('/:id', requireAuth, requireStoreOwner(), async (req: RequestWithDB, res) => {
   try {
     const { id } = req.params;
     const { db } = req;
@@ -114,11 +171,26 @@ router.put('/:id', async (req: AuthRequest, res) => {
   }
 });
 
-// DELETE store
-router.delete('/:id', async (req: AuthRequest, res) => {
+// DELETE store - requires store owner or admin
+router.delete('/:id', requireAuth, requireStoreOwner(), async (req: RequestWithDB, res) => {
   try {
     const { id } = req.params;
     const { db } = req;
+    
+    // Check if store has products
+    const { data: products, error: productsError } = await db
+      .from('products')
+      .select('id')
+      .eq('store_id', id)
+      .limit(1);
+      
+    if (productsError) throw productsError;
+    
+    if (products && products.length > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete store with products. Remove all products first.' 
+      });
+    }
     
     const { error } = await db
       .from('stores')
