@@ -3,10 +3,16 @@ import { useLocation } from 'react-router-dom';
 import Layout from '../components/Layout/Layout';
 import ProductGrid from '../components/Products/ProductGrid';
 import ProductFilter from '../components/Products/ProductFilter';
-import { Product } from '../types';
-import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import { toast } from 'react-hot-toast';
+
+// Import our animation components
+import AnimatedPage from '../components/UI/AnimatedPage';
+import FadeIn from '../components/UI/FadeIn';
+
+// Import our API services
+import { getAllProducts, Product } from '../services/api/products';
+import { getAllStores } from '../services/api/stores';
 
 const ProductsPage: React.FC = () => {
   const location = useLocation();
@@ -23,35 +29,25 @@ const ProductsPage: React.FC = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
 
-  // Fetch products from all active stores
+  // Fetch products from all active stores using our backend API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch active stores first
-        const { data: storesData, error: storesError } = await supabase
-          .from('stores')
-          .select('id, name')
-          .eq('is_active', true);
+        // Fetch active stores using our backend API
+        const storesData = await getAllStores();
+        const activeStores = storesData.filter(store => store.is_active);
+        setStores(activeStores.map(store => ({ id: store.id, name: store.name })));
 
-        if (storesError) throw storesError;
-        setStores(storesData || []);
-
-        // Fetch products from active stores
-        const { data, error } = await supabase
-          .from('products')
-          .select(`
-            *,
-            store:store_id (
-              name,
-              is_active
-            )
-          `)
-          .eq('store.is_active', true);
-
-        if (error) throw error;
-
-        const validProducts = data.filter(product => product.store !== null);
+        // Fetch products using our backend API
+        const productsData = await getAllProducts();
+        
+        // Filter out products from inactive stores
+        const activeStoreIds = activeStores.map(store => store.id);
+        const validProducts = productsData.filter(product => 
+          activeStoreIds.includes(product.store_id)
+        );
+        
         setProducts(validProducts);
         
         // Extract unique categories
@@ -63,14 +59,14 @@ const ProductsPage: React.FC = () => {
         const maxPrice = Math.max(...prices, 0);
         setPriceRange([0, maxPrice]);
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching data:', error);
         toast.error('Не удалось загрузить товары');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   // Filter products based on search, category, store, and price range
@@ -102,33 +98,35 @@ const ProductsPage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
+      <AnimatedPage className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
-          <aside className="md:w-64">
+          <FadeIn className="md:w-64" delay={0.2}>
             <ProductFilter
               categories={categories}
               selectedCategory={selectedCategory}
               onCategoryChange={setSelectedCategory}
               priceRange={priceRange}
               onPriceRangeChange={setPriceRange}
-              maxPrice={Math.max(...products.map(p => p.price))}
+              maxPrice={Math.max(...products.map(p => p.price), 0)}
               stores={stores}
               selectedStore={selectedStore}
               onStoreChange={setSelectedStore}
             />
-          </aside>
+          </FadeIn>
 
           <main className="flex-1">
             {searchQuery && (
-              <p className="mb-4 text-gray-600">
-                Результаты поиска для: "{searchQuery}"
-              </p>
+              <FadeIn className="mb-4 text-gray-600">
+                <p>Результаты поиска для: "{searchQuery}"</p>
+              </FadeIn>
             )}
             
-            <ProductGrid products={filteredProducts} isLoading={isLoading} />
+            <FadeIn delay={0.4}>
+              <ProductGrid products={filteredProducts} isLoading={isLoading} />
+            </FadeIn>
           </main>
         </div>
-      </div>
+      </AnimatedPage>
     </Layout>
   );
 };

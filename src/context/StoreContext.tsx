@@ -1,176 +1,173 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Store, CreateStoreDTO, UpdateStoreDTO } from '../types';
-import { supabase } from '../lib/supabase';
+import { 
+  getAllStores, 
+  getStoreById,
+  getStoresByOwnerId,
+  createStore,
+  updateStore,
+  deleteStore,
+  Store 
+} from '../services/api/stores';
 import { useAuth } from '../hooks/useAuth';
-import { toast } from 'react-hot-toast';
 
 interface StoreContextType {
   stores: Store[];
-  userStores: Store[];
+  selectedStore: Store | null;
   loading: boolean;
-  createStore: (data: CreateStoreDTO) => Promise<Store | null>;
-  updateStore: (data: UpdateStoreDTO) => Promise<Store | null>;
-  deleteStore: (id: string) => Promise<boolean>;
-  getStoreById: (id: string) => Store | undefined;
+  error: string | null;
+  fetchStores: () => Promise<void>;
+  fetchStoreById: (id: string) => Promise<Store | null>;
+  fetchStoresByOwner: (ownerId: string) => Promise<Store[]>;
+  addStore: (store: Omit<Store, 'id' | 'created_at' | 'updated_at'>) => Promise<Store | null>;
+  editStore: (id: string, store: Partial<Store>) => Promise<Store | null>;
+  removeStore: (id: string) => Promise<boolean>;
+  selectStore: (store: Store | null) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [stores, setStores] = useState<Store[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  // Fetch all active stores
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('stores')
-          .select('*')
-          .order('created_at', { ascending: false });
+    if (user) {
+      fetchStores();
+    }
+  }, [user]);
 
-        if (error) throw error;
-        setStores(data || []);
-      } catch (error) {
-        console.error('Error fetching stores:', error);
-        toast.error('Failed to load stores');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStores();
-
-    // Subscribe to changes
-    const subscription = supabase
-      .channel('stores')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, fetchStores)
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const userStores = stores.filter(store => store.owner_id === user?.id);
-
-  const createStore = async (data: CreateStoreDTO): Promise<Store | null> => {
+  const fetchStores = async () => {
     try {
-      if (!user?.id) {
-        toast.error('You must be logged in to create a store');
-        return null;
-      }
-
-      // Check store limits based on user's plan
-      const maxStores = profile?.max_stores || 1; // Default to 1 for free plan
-      if (userStores.length >= maxStores) {
-        toast.error('You have reached the maximum number of stores for your plan.');
-        // Redirect to upgrade page
-        navigate('/upgrade-plan');
-        return null;
-      }
-
-      const { data: existingStore } = await supabase
-        .from('stores')
-        .select('id')
-        .eq('name', data.name)
-        .single();
-
-      if (existingStore) {
-        toast.error('A store with this name already exists');
-        return null;
-      }
-
-      const { data: store, error } = await supabase
-        .from('stores')
-        .insert({
-          name: data.name,
-          description: data.description,
-          owner_id: user.id,
-          is_active: true
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Store creation error:', error);
-        if (error.code === '42501') {
-          toast.error('You do not have permission to create a store');
-        } else if (error.code === '23505') {
-          toast.error('A store with this name already exists');
-        } else {
-          toast.error('Failed to create store');
-        }
-        return null;
-      }
-
-      toast.success('Store created successfully');
-      // Update local stores state
-      setStores(prevStores => [...prevStores, store]);
-      return store;
-    } catch (error) {
-      console.error('Error creating store:', error);
-      toast.error('Failed to create store');
-      return null;
+      setLoading(true);
+      setError(null);
+      const fetchedStores = await getAllStores();
+      setStores(fetchedStores);
+      return fetchedStores;
+    } catch (err) {
+      setError('Failed to fetch stores');
+      console.error('Failed to fetch stores:', err);
+      return [];
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateStore = async (data: UpdateStoreDTO): Promise<Store | null> => {
+  const fetchStoreById = async (id: string) => {
     try {
-      const { data: store, error } = await supabase
-        .from('stores')
-        .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('id', data.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      toast.success('Store updated successfully');
+      setLoading(true);
+      setError(null);
+      const store = await getStoreById(id);
       return store;
-    } catch (error) {
-      console.error('Error updating store:', error);
-      toast.error('Failed to update store');
+    } catch (err) {
+      setError(`Failed to fetch store ${id}`);
+      console.error(`Failed to fetch store ${id}:`, err);
       return null;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteStore = async (id: string): Promise<boolean> => {
+  const fetchStoresByOwner = async (ownerId: string) => {
     try {
-      const { error } = await supabase
-        .from('stores')
-        .delete()
-        .eq('id', id);
+      setLoading(true);
+      setError(null);
+      const fetchedStores = await getStoresByOwnerId(ownerId);
+      return fetchedStores;
+    } catch (err) {
+      setError(`Failed to fetch stores for owner ${ownerId}`);
+      console.error(`Failed to fetch stores for owner ${ownerId}:`, err);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      if (error) throw error;
-      toast.success('Store deleted successfully');
+  const addStore = async (storeData: Omit<Store, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const newStore = await createStore(storeData as any);
+      setStores(prevStores => [...prevStores, newStore]);
+      return newStore;
+    } catch (err) {
+      setError('Failed to create store');
+      console.error('Failed to create store:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const editStore = async (id: string, storeData: Partial<Store>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const updatedStore = await updateStore(id, storeData);
+      setStores(prevStores => 
+        prevStores.map(store => 
+          store.id === id ? updatedStore : store
+        )
+      );
+      
+      // If the updated store is the selected store, update it too
+      if (selectedStore?.id === id) {
+        setSelectedStore(updatedStore);
+      }
+      
+      return updatedStore;
+    } catch (err) {
+      setError(`Failed to update store ${id}`);
+      console.error(`Failed to update store ${id}:`, err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeStore = async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await deleteStore(id);
+      setStores(prevStores => prevStores.filter(store => store.id !== id));
+      
+      // If the deleted store is the selected store, clear selection
+      if (selectedStore?.id === id) {
+        setSelectedStore(null);
+      }
+      
       return true;
-    } catch (error) {
-      console.error('Error deleting store:', error);
-      toast.error('Failed to delete store');
+    } catch (err) {
+      setError(`Failed to delete store ${id}`);
+      console.error(`Failed to delete store ${id}:`, err);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStoreById = (id: string) => stores.find(store => store.id === id);
+  const selectStore = (store: Store | null) => {
+    setSelectedStore(store);
+  };
 
-  return (
-    <StoreContext.Provider
-      value={{
-        stores,
-        userStores,
-        loading,
-        createStore,
-        updateStore,
-        deleteStore,
-        getStoreById,
-      }}
-    >
-      {children}
-    </StoreContext.Provider>
-  );
+  const value = {
+    stores,
+    selectedStore,
+    loading,
+    error,
+    fetchStores,
+    fetchStoreById,
+    fetchStoresByOwner,
+    addStore,
+    editStore,
+    removeStore,
+    selectStore,
+  };
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };
 
 export const useStore = () => {
