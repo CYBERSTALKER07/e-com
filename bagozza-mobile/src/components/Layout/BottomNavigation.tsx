@@ -5,7 +5,7 @@ import { BottomTabParamList } from '../../types/navigation';
 import Icon from 'react-native-vector-icons/Feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 // Import screens
 import HomeScreen from '../../pages/HomePage';
