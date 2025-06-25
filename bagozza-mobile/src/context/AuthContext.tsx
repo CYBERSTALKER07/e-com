@@ -2,9 +2,8 @@ import React, { createContext, useState, useEffect } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 
-// Import the Supabase client from lib and API service
+// Import the Supabase client from lib
 import { supabase } from '../lib/supabase';
-import api from '../services/api';
 
 export interface UserProfile {
   id: string;
@@ -93,41 +92,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(basicProfile);
 
         try {
-          // Try to fetch profile from API using our consistent API client
-          const { data: apiProfile, error } = await api.auth.getProfile();
-          
-          if (apiProfile && !error) {
+          // Fetch profile directly from Supabase 'profiles' table
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          if (error) throw error;
+          if (profileData) {
             setProfile({
-              id: apiProfile.id,
-              full_name: apiProfile.full_name,
-              email: apiProfile.email || user.email || '',
-              role: apiProfile.role,
-              avatar_url: apiProfile.avatar_url,
-              phone: apiProfile.phone,
-              plan: apiProfile.plan || 'free',
-              max_stores: apiProfile.max_stores || 1
+              id: profileData.id,
+              full_name: profileData.full_name,
+              email: profileData.email || user.email || '',
+              role: profileData.role,
+              avatar_url: profileData.avatar_url,
+              phone: profileData.phone,
+              plan: profileData.plan || 'free',
+              max_stores: profileData.max_stores || 1
             });
-            setIsAdmin(apiProfile.role === 'admin');
-          } else {
-            // Fallback to direct database query
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select()
-              .eq('id', user.id)
-              .single();
-              
-            if (profileData) {
-              setProfile({
-                ...basicProfile,
-                full_name: profileData.full_name,
-                role: profileData.role,
-                avatar_url: profileData.avatar_url,
-                phone: profileData.phone,
-                plan: profileData.plan || 'free',
-                max_stores: profileData.max_stores || 1
-              });
-              setIsAdmin(profileData.role === 'admin');
-            }
+            setIsAdmin(profileData.role === 'admin');
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
@@ -245,64 +228,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User not authenticated');
       }
 
-      // Try to update through API using our consistent API client
-      try {
-        const { data: apiProfile, error } = await api.auth.updateProfile(data);
-        
-        if (error) {
-          throw new Error(error);
+      // Update user metadata
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          full_name: data.full_name,
+          role: data.role
         }
-        
-        if (apiProfile) {
-          setProfile(prev => prev ? { ...prev, ...apiProfile } : apiProfile);
-          setIsAdmin(apiProfile.role === 'admin');
-        }
-        
-        return { error: null };
-      } catch (apiError) {
-        console.warn('API update failed, falling back to direct update:', apiError);
-        
-        // Always update user metadata
-        const { error: metadataError } = await supabase.auth.updateUser({
-          data: {
-            full_name: data.full_name,
-            role: data.role
-          }
-        });
-
-        if (metadataError) {
-          console.warn('Error updating user metadata:', metadataError);
-        }
-        
-        // Try to update the profiles table
-        if (data.full_name || data.role || data.avatar_url || data.phone) {
-          const updates = {
-            id: user.id,
-            full_name: data.full_name || profile?.full_name || '',
-            role: data.role || profile?.role || 'user',
-            avatar_url: data.avatar_url,
-            phone: data.phone,
-            updated_at: new Date().toISOString()
-          };
-
-          const { error: dbError } = await supabase
-            .from('profiles')
-            .upsert(updates);
-
-          if (dbError) {
-            throw new Error('Could not update profile in database');
-          }
-        }
-        
-        // Update local state
-        setProfile(prev => prev ? { ...prev, ...data } : null);
-        if (data.role === 'admin') {
-          setIsAdmin(true);
-        } else if (data.role === 'user') {
-          setIsAdmin(false);
-        }
+      });
+      if (metadataError) {
+        console.warn('Error updating user metadata:', metadataError);
       }
-      
+
+      // Update the profiles table
+      const updates = {
+        id: user.id,
+        full_name: data.full_name || profile?.full_name || '',
+        role: data.role || profile?.role || 'user',
+        avatar_url: data.avatar_url,
+        phone: data.phone,
+        updated_at: new Date().toISOString()
+      };
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .upsert(updates);
+      if (dbError) {
+        throw new Error('Could not update profile in database');
+      }
+
+      // Update local state
+      setProfile(prev => prev ? { ...prev, ...updates } : updates as UserProfile);
+      setIsAdmin(updates.role === 'admin');
+
       Alert.alert('Success', 'Profile updated successfully');
       return { error: null };
     } catch (error) {
