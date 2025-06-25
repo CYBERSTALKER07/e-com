@@ -5,19 +5,22 @@ import { BottomTabParamList } from '../../types/navigation';
 import Icon from 'react-native-vector-icons/Feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../../context/AuthContext';
 
 // Import screens
 import HomeScreen from '../../pages/HomePage';
 import ProductsScreen from '../../pages/ProductsPage';
 import CartScreen from '../../pages/CartPage';
 import OrdersScreen from '../../pages/OrdersPage';
-import AccountScreen from '../../pages/Auth/LoginPage';
+import AccountScreen from '../../pages/AccountPage';
+import StoreManagementPage from '../../pages/StoreManagementPage';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 // Custom tab bar component for the center button effect
 const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const focusedOptions = descriptors[state.routes[state.index].key].options;
   const primaryColor = '#6B4423'; // Brown color
   const accentColor = '#FCEDD9'; // Light beige accent color
@@ -88,6 +91,9 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
             break;
           case 'Orders':
             iconName = 'clock';
+            break;
+          case 'Store':
+            iconName = 'shopping';
             break;
           case 'Account':
             iconName = 'user';
@@ -181,6 +187,8 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
 };
 
 const BottomNavigation: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Tab.Navigator
       tabBar={props => <TabBar {...props} />}
@@ -192,6 +200,7 @@ const BottomNavigation: React.FC = () => {
       <Tab.Screen name="Products" component={ProductsScreen} />
       <Tab.Screen name="Cart" component={CartScreen} />
       <Tab.Screen name="Orders" component={OrdersScreen} />
+      <Tab.Screen name="Store" component={StoreManagementPage} />
       <Tab.Screen name="Account" component={AccountScreen} />
     </Tab.Navigator>
   );

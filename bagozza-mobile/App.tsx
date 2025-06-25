@@ -7,6 +7,12 @@ import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 
+// Import context providers
+import { AuthProvider } from './src/context/AuthContext';
+import { StoreProvider } from './src/context/StoreContext';
+import { CartProvider } from './src/context/CartContext';
+import { OrderProvider } from './src/context/OrderContext';
+
 // Import navigation types
 import { RootStackParamList } from './src/types/navigation';
 
@@ -70,22 +76,30 @@ export default function App() {
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
         <PaperProvider theme={theme}>
-          <StatusBar style="auto" />
-          <NavigationContainer>
-            <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
-              {/* Main tabbed navigation */}
-              <Stack.Screen name="Main" component={BottomNavigation} />
-              
-              {/* Other screens */}
-              <Stack.Screen name="ProductDetail" component={ProductDetailPage} />
-              <Stack.Screen name="Checkout" component={CheckoutPage} />
-              <Stack.Screen name="OrderDetail" component={OrderDetailPage} />
-              <Stack.Screen name="Login" component={LoginPage} />
-              <Stack.Screen name="Register" component={RegisterPage} />
-              <Stack.Screen name="Admin" component={AdminPage} />
-              <Stack.Screen name="PaymentComplete" component={PaymentCompletePage} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <AuthProvider>
+            <StoreProvider>
+              <CartProvider>
+                <OrderProvider>
+                  <StatusBar style="auto" />
+                  <NavigationContainer>
+                    <Stack.Navigator initialRouteName="Main" screenOptions={{ headerShown: false }}>
+                      {/* Main tabbed navigation */}
+                      <Stack.Screen name="Main" component={BottomNavigation} />
+                      
+                      {/* Other screens */}
+                      <Stack.Screen name="ProductDetail" component={ProductDetailPage} />
+                      <Stack.Screen name="Checkout" component={CheckoutPage} />
+                      <Stack.Screen name="OrderDetail" component={OrderDetailPage} />
+                      <Stack.Screen name="Login" component={LoginPage} />
+                      <Stack.Screen name="Register" component={RegisterPage} />
+                      <Stack.Screen name="Admin" component={AdminPage} />
+                      <Stack.Screen name="PaymentComplete" component={PaymentCompletePage} />
+                    </Stack.Navigator>
+                  </NavigationContainer>
+                </OrderProvider>
+              </CartProvider>
+            </StoreProvider>
+          </AuthProvider>
         </PaperProvider>
       </SafeAreaProvider>
     </View>
