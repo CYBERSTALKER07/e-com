@@ -102,13 +102,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.warn('Could not fetch profile from API, using basic profile:', error);
           // Fall back to Supabase direct query if API fails
-          const { data, error } = await supabase
+          const { data, error: supabaseError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', user.id)
             .single();
 
-          if (!error && data) {
+          if (!supabaseError && data) {
             const userProfile: UserProfile = {
               id: data.id,
               full_name: data.full_name,
@@ -197,7 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
