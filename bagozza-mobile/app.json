@@ -24,6 +24,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "supabaseUrl": "https://your-supabase-project-url.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYmxod2NsdXhweHlwdm9tamNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA4NDA3MDYsImV4cCI6MjA2NjQxNjcwNn0.q7fKN-XH0AsP6Tclt9pzobWTvArk3d3ErwmzMncaqnY"
     }
   }
 }
