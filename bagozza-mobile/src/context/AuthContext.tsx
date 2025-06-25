@@ -2,9 +2,9 @@ import React, { createContext, useState, useEffect } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 
-// Import the Supabase client from lib
+// Import the Supabase client from lib and API service
 import { supabase } from '../lib/supabase';
-import api from '../services/api/apiClient';
+import api from '../services/api';
 
 export interface UserProfile {
   id: string;
@@ -93,8 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(basicProfile);
 
         try {
-          // Try to fetch profile from API using our new API client
-          const { data: apiProfile, error } = await api.get<UserProfile>('auth/me');
+          // Try to fetch profile from API using our consistent API client
+          const { data: apiProfile, error } = await api.auth.getProfile();
           
           if (apiProfile && !error) {
             setProfile({
@@ -245,9 +245,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User not authenticated');
       }
 
-      // Try to update through API first using our API client
+      // Try to update through API using our consistent API client
       try {
-        const { data: apiProfile, error } = await api.put<UserProfile>('auth/me', data);
+        const { data: apiProfile, error } = await api.auth.updateProfile(data);
         
         if (error) {
           throw new Error(error);
