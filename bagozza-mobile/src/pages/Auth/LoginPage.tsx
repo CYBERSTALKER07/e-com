@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Text, TextInput, Button, ActivityIndicator } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { useAuth } from '../../hooks/useAuth';
 import { RootStackParamList } from '../../types/navigation';
 import Navbar from '../../components/Layout/Navbar';
+import { supabase } from '../../lib/supabase';
 
 const LoginPage = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { signIn } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,12 +45,20 @@ const LoginPage = () => {
     
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      // Use Supabase auth directly
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
       
-      if (!error) {
-        // Navigate to the main screen on successful login
-        navigation.navigate('Home');
+      if (error) {
+        Alert.alert('Login Error', error.message);
+      } else {
+        // Navigate to main app on successful login
+        navigation.navigate('Main');
       }
+    } catch (error) {
+      Alert.alert('Login Error', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

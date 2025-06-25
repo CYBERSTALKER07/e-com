@@ -1,21 +1,21 @@
-// Add RN URL polyfill before anything else
+import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { AppState } from 'react-native';
 
-// Replace manifest extra lookup with a unified expoConfig
-const expoConfig = (Constants.manifest as any) ?? (Constants.expoConfig as any);
-const { supabaseUrl, supabaseAnonKey } = expoConfig.extra as {
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-};
+// Get configuration from app.json
+const expoConfig = Constants.expoConfig || Constants.manifest;
+const { supabaseUrl, supabaseAnonKey } = expoConfig?.extra || {};
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase configuration in app.json.');
+  throw new Error('Missing Supabase configuration in app.json');
 }
 
-// Create a custom Supabase client for React Native with persistent storage
+console.log('🔗 Supabase URL:', supabaseUrl);
+console.log('🔑 Using anon key:', supabaseAnonKey.substring(0, 20) + '...');
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
@@ -25,7 +25,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Auto-refresh setup for Supabase Auth
+// Auto-refresh setup
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh();

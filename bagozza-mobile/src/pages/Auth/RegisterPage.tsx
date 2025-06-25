@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { Text, TextInput, Button, ActivityIndicator } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { useAuth } from '../../hooks/useAuth';
 import { RootStackParamList } from '../../types/navigation';
 import Navbar from '../../components/Layout/Navbar';
+import { supabase } from '../../lib/supabase';
 
 const RegisterPage = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { signUp } = useAuth();
   
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -63,12 +62,51 @@ const RegisterPage = () => {
     
     setLoading(true);
     try {
-      const { error } = await signUp(email, password, fullName);
+      // Use Supabase auth directly for registration
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
       
-      if (!error) {
-        // Navigate to login on successful registration
-        navigation.navigate('Login');
+      if (error) {
+        Alert.alert('Registration Error', error.message);
+      } else {
+        // Create profile in database after signup
+        if (data.user) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              full_name: fullName,
+              email: email,
+              role: 'user',
+              plan: 'free',
+              max_stores: 1
+            });
+
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+          }
+        }
+        
+        Alert.alert(
+          'Registration Successful', 
+          'Please check your email to verify your account.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ]
+        );
       }
+    } catch (error) {
+      Alert.alert('Registration Error', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }

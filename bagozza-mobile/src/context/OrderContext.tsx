@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from './AuthContext';
-import { AuthContext } from './AuthContext';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 import { CartContext, CartItem } from './CartContext';
 import { Alert } from 'react-native';
-import Constants from 'expo-constants';
 
 // Types
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -111,9 +110,6 @@ interface OrderContextType {
   refreshOrders: () => Promise<void>;
 }
 
-// API URL for backend communication
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api';
-
 export const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -121,7 +117,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { user, session } = useContext(AuthContext) || {};
+  const { user, session } = useAuth();
   const { clearCart } = useContext(CartContext) || {};
 
   // Load orders on mount and when user changes
@@ -140,184 +136,86 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(null);
     
     try {
-      // Try API first
-      try {
-        if (!session?.access_token) throw new Error("No valid session");
+      const { data, error: supabaseError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (supabaseError) throw supabaseError;
+      
+      // Transform data to match our Order interface
+      const transformedOrders: Order[] = (data || []).map(order => {
+        const shippingAddress = order.shipping_address as unknown as ShippingAddress;
         
-        const response = await fetch(`${API_URL}/orders/my-orders`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const customer: Customer = {
+          id: order.customer_id,
+          name: shippingAddress?.fullName || '',
+          email: order.customer_email || '',
+          phone: shippingAddress?.phone || ''
+        };
         
-        if (!response.ok) throw new Error("API fetch orders failed");
+        const delivery: DeliveryInfo = {
+          address: shippingAddress ? 
+            `${shippingAddress.streetAddress}, ${shippingAddress.city}` : 
+            'No address provided',
+          method: 'Standard Delivery'
+        };
         
-        const ordersData = await response.json();
+        const payment = {
+          method: order.payment_method === 'click' ? 'Click' : 
+                 order.payment_method === 'credit-card' ? 'Credit Card' : 'Cash',
+          status: order.payment_details?.status === 'paid' ? 'Paid' : 'Pending'
+        };
         
-        // Transform data to match our Order interface
-        const transformedOrders: Order[] = ordersData.map((order: any) => {
-          // Extract customer info
-          const customer: Customer = {
-            id: order.customer_id,
-            name: order.shipping_address.fullName,
-            email: order.customer_email || '',
-            phone: order.shipping_address.phone || ''
-          };
-          
-          // Create delivery info
-          const delivery: DeliveryInfo = {
-            address: `${order.shipping_address.streetAddress}, ${order.shipping_address.city}`,
-            method: 'Standard Delivery'
-          };
-          
-          // Create payment info
-          const payment = {
-            method: order.payment_method === 'click' ? 'Click' : 
-                   order.payment_method === 'credit-card' ? 'Credit Card' : 'Cash',
-            status: order.payment_details?.status === 'paid' ? 'Paid' : 'Pending'
-          };
-          
-          // Create timeline events
-          const timeline: TimelineEvent[] = [
-            { status: 'Order placed', date: new Date(order.created_at).toLocaleString() }
-          ];
-          
-          // Add status changes to timeline
-          if (order.status !== 'pending') {
-            timeline.push({ 
-              status: 'Order confirmed', 
-              date: new Date(order.updated_at).toLocaleString() 
-            });
-          }
-          
-          if (order.status === 'shipped' || order.status === 'delivered') {
-            timeline.push({ 
-              status: 'Order shipped', 
-              date: new Date(
-                new Date(order.updated_at).getTime() + 3600000
-              ).toLocaleString() 
-            });
-          }
-          
-          if (order.status === 'delivered') {
-            timeline.push({ 
-              status: 'Order delivered', 
-              date: new Date(
-                new Date(order.updated_at).getTime() + 86400000
-              ).toLocaleString() 
-            });
-          }
-          
-          // Format date for display
-          const date = new Date(order.created_at).toLocaleDateString('en-US', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
+        // Create timeline events based on order status
+        const timeline: TimelineEvent[] = [
+          { status: 'Order placed', date: new Date(order.created_at).toLocaleString() }
+        ];
+        
+        if (order.status !== 'pending') {
+          timeline.push({ 
+            status: 'Order confirmed', 
+            date: new Date(order.updated_at).toLocaleString() 
           });
-          
-          return {
-            ...order,
-            customer,
-            delivery,
-            payment,
-            date,
-            timeline,
-            deliveryFee: order.shipping_fee
-          };
-        });
+        }
         
-        setOrders(transformedOrders);
-        
-      } catch (apiError) {
-        // Fallback to direct query
-        console.log("API fetch orders failed, using direct query:", apiError);
-        
-        const { data, error: supabaseError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('customer_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        if (supabaseError) throw supabaseError;
-        
-        // Transform data to match our Order interface
-        const transformedOrders: Order[] = (data || []).map(order => {
-          // Extract customer info
-          const shippingAddress = order.shipping_address as unknown as ShippingAddress;
-          const customer: Customer = {
-            id: order.customer_id,
-            name: shippingAddress?.fullName || '',
-            email: order.customer_email || '',
-            phone: shippingAddress?.phone || ''
-          };
-          
-          // Create delivery info
-          const delivery: DeliveryInfo = {
-            address: shippingAddress ? 
-              `${shippingAddress.streetAddress}, ${shippingAddress.city}` : 
-              'No address provided',
-            method: 'Standard Delivery'
-          };
-          
-          // Create payment info
-          const payment = {
-            method: order.payment_method === 'click' ? 'Click' : 
-                   order.payment_method === 'credit-card' ? 'Credit Card' : 'Cash',
-            status: order.payment_details?.status === 'paid' ? 'Paid' : 'Pending'
-          };
-          
-          // Create timeline events
-          const timeline: TimelineEvent[] = [
-            { status: 'Order placed', date: new Date(order.created_at).toLocaleString() }
-          ];
-          
-          // Add status changes to timeline
-          if (order.status !== 'pending') {
-            timeline.push({ 
-              status: 'Order confirmed', 
-              date: new Date(order.updated_at).toLocaleString() 
-            });
-          }
-          
-          if (order.status === 'shipped' || order.status === 'delivered') {
-            timeline.push({ 
-              status: 'Order shipped', 
-              date: new Date(
-                new Date(order.updated_at).getTime() + 3600000
-              ).toLocaleString() 
-            });
-          }
-          
-          if (order.status === 'delivered') {
-            timeline.push({ 
-              status: 'Order delivered', 
-              date: new Date(
-                new Date(order.updated_at).getTime() + 86400000
-              ).toLocaleString() 
-            });
-          }
-          
-          // Format date for display
-          const date = new Date(order.created_at).toLocaleDateString('en-US', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
+        if (order.status === 'shipped' || order.status === 'delivered') {
+          timeline.push({ 
+            status: 'Order shipped', 
+            date: new Date(
+              new Date(order.updated_at).getTime() + 3600000
+            ).toLocaleString() 
           });
-          
-          return {
-            ...order,
-            customer,
-            delivery,
-            payment,
-            date,
-            timeline,
-            deliveryFee: order.shipping_fee
-          };
+        }
+        
+        if (order.status === 'delivered') {
+          timeline.push({ 
+            status: 'Order delivered', 
+            date: new Date(
+              new Date(order.updated_at).getTime() + 86400000
+            ).toLocaleString() 
+          });
+        }
+        
+        const date = new Date(order.created_at).toLocaleDateString('en-US', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
         
-        setOrders(transformedOrders);
-      }
+        return {
+          ...order,
+          customer,
+          delivery,
+          payment,
+          date,
+          timeline,
+          deliveryFee: order.shipping_fee
+        };
+      });
+      
+      setOrders(transformedOrders);
       
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -349,10 +247,10 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Calculate order values
       const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const shipping_fee = 15000; // Default shipping fee
-      const tax = 0; // Tax calculation if needed
-      const discount = 0; // Discount calculation if needed
+      const tax = 0;
+      const discount = 0;
       
-      // Build the order object
+      // Build the order object for Supabase
       const newOrder = {
         customer_id: user.id,
         customer_email: customerEmail,
@@ -373,120 +271,58 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         tax,
         shipping_fee,
         discount,
-        status: 'pending' as OrderStatus,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        status: 'pending' as OrderStatus
       };
       
-      // Try API first
-      try {
-        if (!session?.access_token) throw new Error("No valid session");
-        
-        const response = await fetch(`${API_URL}/orders`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(newOrder)
-        });
-        
-        if (!response.ok) throw new Error("API create order failed");
-        
-        const createdOrder = await response.json();
-        
-        // Transform to match our Order interface with app-specific fields
-        const transformedOrder: Order = {
-          ...createdOrder,
-          customer: {
-            id: user.id,
-            name: customerName,
-            email: customerEmail,
-            phone: customerPhone
-          },
-          delivery: {
-            address: `${shippingAddress.streetAddress}, ${shippingAddress.city}`,
-            method: 'Standard Delivery'
-          },
-          payment: {
-            method: paymentMethod === 'click' ? 'Click' : 
-                   paymentMethod === 'credit-card' ? 'Credit Card' : 'Cash',
-            status: paymentMethod === 'cash' ? 'Pending' : 'Paid'
-          },
-          date: new Date().toLocaleDateString('en-US', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }),
-          timeline: [
-            { 
-              status: 'Order placed', 
-              date: new Date().toLocaleString() 
-            }
-          ],
-          deliveryFee: shipping_fee
-        };
-        
-        // Update local state
-        setOrders(prev => [transformedOrder, ...prev]);
-        
-        // Clear cart if order was successful
-        if (clearCart) clearCart();
-        
-        return transformedOrder;
-        
-      } catch (apiError) {
-        // Fallback to direct insert
-        console.log("API create order failed, using direct insert:", apiError);
-        
-        const { data: createdOrder, error: insertError } = await supabase
-          .from('orders')
-          .insert(newOrder)
-          .select()
-          .single();
-        
-        if (insertError) throw insertError;
-        
-        // Transform to match our Order interface with app-specific fields
-        const transformedOrder: Order = {
-          ...createdOrder,
-          customer: {
-            id: user.id,
-            name: customerName,
-            email: customerEmail,
-            phone: customerPhone
-          },
-          delivery: {
-            address: `${shippingAddress.streetAddress}, ${shippingAddress.city}`,
-            method: 'Standard Delivery'
-          },
-          payment: {
-            method: paymentMethod === 'click' ? 'Click' : 
-                   paymentMethod === 'credit-card' ? 'Credit Card' : 'Cash',
-            status: paymentMethod === 'cash' ? 'Pending' : 'Paid'
-          },
-          date: new Date().toLocaleDateString('en-US', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }),
-          timeline: [
-            { 
-              status: 'Order placed', 
-              date: new Date().toLocaleString() 
-            }
-          ],
-          deliveryFee: shipping_fee
-        };
-        
-        // Update local state
-        setOrders(prev => [transformedOrder, ...prev]);
-        
-        // Clear cart if order was successful
-        if (clearCart) clearCart();
-        
-        return transformedOrder;
-      }
+      // Insert order into Supabase
+      const { data: createdOrder, error: insertError } = await supabase
+        .from('orders')
+        .insert(newOrder)
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      
+      // Transform to match our Order interface
+      const transformedOrder: Order = {
+        ...createdOrder,
+        customer: {
+          id: user.id,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone
+        },
+        delivery: {
+          address: `${shippingAddress.streetAddress}, ${shippingAddress.city}`,
+          method: 'Standard Delivery'
+        },
+        payment: {
+          method: paymentMethod === 'click' ? 'Click' : 
+                 paymentMethod === 'credit-card' ? 'Credit Card' : 'Cash',
+          status: paymentMethod === 'cash' ? 'Pending' : 'Paid'
+        },
+        date: new Date().toLocaleDateString('en-US', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }),
+        timeline: [
+          { 
+            status: 'Order placed', 
+            date: new Date().toLocaleString() 
+          }
+        ],
+        deliveryFee: shipping_fee
+      };
+      
+      // Update local state
+      setOrders(prev => [transformedOrder, ...prev]);
+      
+      // Clear cart after successful order
+      if (clearCart) clearCart();
+      
+      return transformedOrder;
+      
     } catch (error) {
       console.error('Error creating order:', error);
       setError('Failed to create order');
@@ -511,40 +347,20 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(null);
     
     try {
-      // Try API first
-      try {
-        if (!session?.access_token) throw new Error("No valid session");
-        
-        const response = await fetch(`${API_URL}/orders/${id}/status`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ status })
-        });
-        
-        if (!response.ok) throw new Error("API update order status failed");
-        
-      } catch (apiError) {
-        // Fallback to direct update
-        console.log("API update order status failed, using direct update:", apiError);
-        
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({
-            status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', id);
-        
-        if (updateError) throw updateError;
-      }
+      // Update order status in Supabase
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
       
-      // Update the order in local state
+      if (updateError) throw updateError;
+      
+      // Update local state
       setOrders(prev => prev.map(order => {
         if (order.id === id) {
-          // Create new timeline event based on status
           const newEvent = {
             status: 
               status === 'processing' ? 'Order confirmed' :
@@ -555,7 +371,6 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             date: new Date().toLocaleString()
           };
           
-          // Add new timeline event if it doesn't already exist
           const timeline = [...order.timeline];
           if (!timeline.some(event => event.status === newEvent.status)) {
             timeline.push(newEvent);
