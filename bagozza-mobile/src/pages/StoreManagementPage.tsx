@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput, Alert, RefreshControl } from 'react-native';
 import { Text, Button, Card, Title, Paragraph, Divider, List, Chip, ActivityIndicator } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useStore, Store, CreateStoreDTO } from '../context/StoreContext';
+import { RootStackParamList } from '../types/navigation';
 import { supabase } from '../context/AuthContext';
 import Navbar from '../components/Layout/Navbar';
 
@@ -33,7 +34,7 @@ interface StoreOrder {
 }
 
 const StoreManagementPage = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const { userStores, loading, createStore, updateStore, deleteStore } = useStore();
 

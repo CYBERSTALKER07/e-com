@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl, Image } from 'react-native';
 import { Text, Button, Card, Title, Avatar, List, Divider, TextInput } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
+import { RootStackParamList } from '../types/navigation';
 import Navbar from '../components/Layout/Navbar';
 
 const AccountPage = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { user, profile, isLoading, isAuthenticated, signOut, updateProfile } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
