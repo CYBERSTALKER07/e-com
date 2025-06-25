@@ -5,8 +5,8 @@ import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 
 // Get Supabase configuration from environment variables
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || 'https://your-supabase-url.supabase.co';
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || 'your-anon-key';
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || 'https://bcblhwcluxpxypvomjcr.supabase.co';
+const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYmxod2NsdXhweHlwdm9tamNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NTgxMTAsImV4cCI6MjA2NTQzNDExMH0';
 
 // Create a custom Supabase client for React Native
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

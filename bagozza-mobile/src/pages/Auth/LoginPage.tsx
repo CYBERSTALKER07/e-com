@@ -1,102 +1,167 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, TextInput, Button, ActivityIndicator } from 'react-native-paper';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useAuth } from '../../hooks/useAuth';
+import { RootStackParamList } from '../../types/navigation';
 import Navbar from '../../components/Layout/Navbar';
 
 const LoginPage = () => {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { signIn } = useAuth();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
 
-  const navigation = useNavigation();
+  const validate = () => {
+    const newErrors: {
+      email?: string;
+      password?: string;
+    } = {};
+    
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!validate()) return;
+    
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (!error) {
+        // Navigate to the main screen on successful login
+        navigation.navigate('Home');
+      }
+    } finally {
       setLoading(false);
-      // Navigate to home or previous screen
-      navigation.navigate('Home' as never);
-    }, 1500);
+    }
+  };
+
+  const toggleSecureTextEntry = () => {
+    setSecureTextEntry(!secureTextEntry);
   };
 
   return (
     <View style={styles.container}>
       <Navbar title="Войти" showBackButton />
-
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../assets/icon.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoText}>Bagozza</Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          <TextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-          />
-
-          <TextInput
-            label="Пароль"
-            value={password}
-            onChangeText={setPassword}
-            mode="outlined"
-            secureTextEntry={!isPasswordVisible}
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-            right={
-              <TextInput.Icon
-                icon={isPasswordVisible ? "eye-off" : "eye"}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                color="#6B4423"
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../../assets/icon.png')}
+                style={styles.logo}
+                resizeMode="contain"
               />
-            }
-          />
-
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Забыли пароль?</Text>
-          </TouchableOpacity>
-
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            loading={loading}
-            style={styles.loginButton}
-            labelStyle={styles.loginButtonText}
-          >
-            Войти
-          </Button>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>ИЛИ</Text>
-            <View style={styles.divider} />
+              <Text style={styles.logoText}>Bagozza</Text>
+            </View>
+            
+            <Text style={styles.subtitle}>Войдите в свою учетную запись</Text>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                error={!!errors.email}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
+              />
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Пароль"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={secureTextEntry}
+                style={styles.input}
+                error={!!errors.password}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
+                right={
+                  <TextInput.Icon
+                    icon={secureTextEntry ? "eye" : "eye-off"}
+                    onPress={toggleSecureTextEntry}
+                    color="#6B4423"
+                  />
+                }
+              />
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
+            </View>
+            
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={styles.forgotPassword}
+            >
+              <Text style={styles.forgotPasswordText}>Забыли пароль?</Text>
+            </TouchableOpacity>
+            
+            <Button
+              mode="contained"
+              onPress={handleLogin}
+              style={styles.button}
+              labelStyle={styles.buttonLabel}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FCEDD9" size={20} />
+              ) : (
+                "Войти"
+              )}
+            </Button>
+            
+            <View style={styles.registerContainer}>
+              <Text>Нет учетной записи? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register' as never)}>
+                <Text style={styles.registerText}>Зарегистрироваться</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={styles.skipLogin}
+            >
+              <Text style={styles.skipLoginText}>Продолжить как гость</Text>
+            </TouchableOpacity>
           </View>
-
-          <Button
-            mode="outlined"
-            onPress={() => navigation.navigate('Register' as never)}
-            style={styles.registerButton}
-            labelStyle={styles.registerButtonText}
-          >
-            Регистрация
-          </Button>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -108,15 +173,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginVertical: 40,
+    marginBottom: 30,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
   },
   logoText: {
     fontSize: 28,
@@ -124,12 +196,23 @@ const styles = StyleSheet.create({
     color: '#6B4423',
     marginTop: 10,
   },
-  formContainer: {
-    width: '100%',
+  subtitle: {
+    fontSize: 18,
+    color: '#444',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    marginBottom: 15,
   },
   input: {
-    marginBottom: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FCFCFC',
+  },
+  errorText: {
+    color: '#F44336',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 2,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
@@ -139,37 +222,30 @@ const styles = StyleSheet.create({
     color: '#6B4423',
     fontSize: 14,
   },
-  loginButton: {
+  button: {
+    marginBottom: 20,
+    paddingVertical: 8,
     backgroundColor: '#6B4423',
-    paddingVertical: 8,
-    borderRadius: 5,
   },
-  loginButtonText: {
+  buttonLabel: {
     fontSize: 16,
+    fontWeight: 'bold',
   },
-  dividerContainer: {
+  registerContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  registerText: {
+    color: '#6B4423',
+    fontWeight: 'bold',
+  },
+  skipLogin: {
     alignItems: 'center',
-    marginVertical: 30,
   },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#D5C0A7',
-  },
-  dividerText: {
-    color: '#6B4423',
-    paddingHorizontal: 15,
+  skipLoginText: {
+    color: '#888',
     fontSize: 14,
-  },
-  registerButton: {
-    borderColor: '#6B4423',
-    paddingVertical: 8,
-    borderRadius: 5,
-  },
-  registerButtonText: {
-    color: '#6B4423',
-    fontSize: 16,
   },
 });
 
