@@ -1,135 +1,212 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, TouchableOpacity, Text, ScrollView } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { View, Image, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, TextInput, Button, ActivityIndicator } from 'react-native-paper';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useAuth } from '../../hooks/useAuth';
+import { RootStackParamList } from '../../types/navigation';
 import Navbar from '../../components/Layout/Navbar';
 
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { signUp } = useAuth();
+  
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [confirmSecureTextEntry, setConfirmSecureTextEntry] = useState(true);
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
-  const navigation = useNavigation();
+  const validate = () => {
+    const newErrors: {
+      fullName?: string;
+      email?: string;
+      password?: string;
+      confirmPassword?: string;
+    } = {};
+    
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Имя обязательно';
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = 'Email обязателен';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email некорректный';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Пароль обязателен';
+    } else if (password.length < 6) {
+      newErrors.password = 'Пароль должен быть не менее 6 символов';
+    }
+    
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Подтвердите пароль';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Пароли не совпадают';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    if (!validate()) return;
+    
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const { error } = await signUp(email, password, fullName);
+      
+      if (!error) {
+        // Navigate to login on successful registration
+        navigation.navigate('Login');
+      }
+    } finally {
       setLoading(false);
-      // Navigate to home or login screen
-      navigation.navigate('Login' as never);
-    }, 1500);
+    }
+  };
+
+  const toggleSecureTextEntry = () => {
+    setSecureTextEntry(!secureTextEntry);
+  };
+
+  const toggleConfirmSecureTextEntry = () => {
+    setConfirmSecureTextEntry(!confirmSecureTextEntry);
   };
 
   return (
     <View style={styles.container}>
       <Navbar title="Регистрация" showBackButton />
-
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../assets/icon.png')} 
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoText}>Bagozza</Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          <TextInput
-            label="ФИО"
-            value={formData.name}
-            onChangeText={(text) => setFormData({...formData, name: text})}
-            mode="outlined"
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-          />
-
-          <TextInput
-            label="Email"
-            value={formData.email}
-            onChangeText={(text) => setFormData({...formData, email: text})}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-          />
-
-          <TextInput
-            label="Телефон"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({...formData, phone: text})}
-            mode="outlined"
-            keyboardType="phone-pad"
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-          />
-
-          <TextInput
-            label="Пароль"
-            value={formData.password}
-            onChangeText={(text) => setFormData({...formData, password: text})}
-            mode="outlined"
-            secureTextEntry={!isPasswordVisible}
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-            right={
-              <TextInput.Icon
-                icon={isPasswordVisible ? "eye-off" : "eye"}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                color="#6B4423"
+      
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../../assets/icon.png')}
+                style={styles.logo}
+                resizeMode="contain"
               />
-            }
-          />
-
-          <TextInput
-            label="Подтвердите пароль"
-            value={formData.confirmPassword}
-            onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
-            mode="outlined"
-            secureTextEntry={!isConfirmPasswordVisible}
-            style={styles.input}
-            outlineColor="#D5C0A7"
-            activeOutlineColor="#6B4423"
-            right={
-              <TextInput.Icon
-                icon={isConfirmPasswordVisible ? "eye-off" : "eye"}
-                onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
-                color="#6B4423"
+              <Text style={styles.logoText}>Bagozza</Text>
+            </View>
+            
+            <Text style={styles.subtitle}>Создайте новую учетную запись</Text>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Полное имя"
+                value={fullName}
+                onChangeText={setFullName}
+                style={styles.input}
+                error={!!errors.fullName}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
               />
-            }
-          />
-
-          <Button
-            mode="contained"
-            onPress={handleRegister}
-            loading={loading}
-            style={styles.registerButton}
-            labelStyle={styles.buttonText}
-          >
-            Зарегистрироваться
-          </Button>
-
-          <View style={styles.loginPrompt}>
-            <Text style={styles.promptText}>Уже есть аккаунт? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login' as never)}>
-              <Text style={styles.loginLink}>Войти</Text>
-            </TouchableOpacity>
+              {errors.fullName && (
+                <Text style={styles.errorText}>{errors.fullName}</Text>
+              )}
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                error={!!errors.email}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
+              />
+              {errors.email && (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              )}
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Пароль"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={secureTextEntry}
+                style={styles.input}
+                error={!!errors.password}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
+                right={
+                  <TextInput.Icon
+                    icon={secureTextEntry ? "eye" : "eye-off"}
+                    onPress={toggleSecureTextEntry}
+                    color="#6B4423"
+                  />
+                }
+              />
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
+            </View>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                label="Подтвердите пароль"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={confirmSecureTextEntry}
+                style={styles.input}
+                error={!!errors.confirmPassword}
+                outlineColor="#D5C0A7"
+                activeOutlineColor="#6B4423"
+                right={
+                  <TextInput.Icon
+                    icon={confirmSecureTextEntry ? "eye" : "eye-off"}
+                    onPress={toggleConfirmSecureTextEntry}
+                    color="#6B4423"
+                  />
+                }
+              />
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
+            </View>
+            
+            <Button
+              mode="contained"
+              onPress={handleRegister}
+              style={styles.button}
+              labelStyle={styles.buttonLabel}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FCEDD9" size={20} />
+              ) : (
+                "Зарегистрироваться"
+              )}
+            </Button>
+            
+            <View style={styles.loginContainer}>
+              <Text>Уже есть аккаунт? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login' as never)}>
+                <Text style={styles.loginText}>Войти</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -141,47 +218,61 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   logoContainer: {
     alignItems: 'center',
-    marginVertical: 30,
+    marginBottom: 20,
   },
   logo: {
     width: 80,
     height: 80,
   },
   logoText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#6B4423',
     marginTop: 10,
   },
-  formContainer: {
-    width: '100%',
+  subtitle: {
+    fontSize: 18,
+    color: '#444',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    marginBottom: 15,
   },
   input: {
-    marginBottom: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FCFCFC',
   },
-  registerButton: {
-    backgroundColor: '#6B4423',
-    paddingVertical: 8,
-    borderRadius: 5,
+  errorText: {
+    color: '#F44336',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 2,
+  },
+  button: {
     marginTop: 10,
+    marginBottom: 20,
+    paddingVertical: 8,
+    backgroundColor: '#6B4423',
   },
-  buttonText: {
+  buttonLabel: {
     fontSize: 16,
+    fontWeight: 'bold',
   },
-  loginPrompt: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
   },
-  promptText: {
-    color: '#777777',
-  },
-  loginLink: {
+  loginText: {
     color: '#6B4423',
     fontWeight: 'bold',
   },
