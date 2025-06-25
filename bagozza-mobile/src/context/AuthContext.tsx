@@ -1,22 +1,10 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Session, User, AuthError, createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
+import { Session, User, AuthError } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 
-// Get Supabase configuration from environment variables
-const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl || 'https://bcblhwcluxpxypvomjcr.supabase.co';
-const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjYmxod2NsdXhweHlwdm9tamNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NTgxMTAsImV4cCI6MjA2NTQzNDExMH0';
-
-// Create a custom Supabase client for React Native
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+// Import the Supabase client from lib
+import { supabase } from '../lib/supabase';
+import api from '../services/api/apiClient';
 
 export interface UserProfile {
   id: string;
@@ -44,9 +32,6 @@ export interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// API URL for mobile backend communication
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -108,17 +93,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(basicProfile);
 
         try {
-          // Try to fetch profile from backend API
-          const { session } = (await supabase.auth.getSession()).data;
-          const response = await fetch(`${API_URL}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${session?.access_token || ''}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response.ok) {
-            const apiProfile = await response.json();
+          // Try to fetch profile from API using our new API client
+          const { data: apiProfile, error } = await api.get<UserProfile>('auth/me');
+          
+          if (apiProfile && !error) {
             setProfile({
               id: apiProfile.id,
               full_name: apiProfile.full_name,
@@ -153,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.error('Error fetching profile:', error);
+          // We'll still use the basic profile
         }
       } catch (error) {
         console.error('Error in profile fetch process:', error);
@@ -266,27 +245,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User not authenticated');
       }
 
-      // Try to update through API first
+      // Try to update through API first using our API client
       try {
-        const { session } = (await supabase.auth.getSession()).data;
-        if (!session) throw new Error('No active session');
+        const { data: apiProfile, error } = await api.put<UserProfile>('auth/me', data);
         
-        const response = await fetch(`${API_URL}/auth/me`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to update profile via API');
+        if (error) {
+          throw new Error(error);
         }
         
-        const apiProfile = await response.json();
-        setProfile(prev => prev ? { ...prev, ...apiProfile } : apiProfile);
-        setIsAdmin(apiProfile.role === 'admin');
+        if (apiProfile) {
+          setProfile(prev => prev ? { ...prev, ...apiProfile } : apiProfile);
+          setIsAdmin(apiProfile.role === 'admin');
+        }
+        
         return { error: null };
       } catch (apiError) {
         console.warn('API update failed, falling back to direct update:', apiError);

@@ -93,7 +93,7 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
             iconName = 'clock';
             break;
           case 'Store':
-            iconName = 'shopping';
+            iconName = 'store';
             break;
           case 'Account':
             iconName = 'user';
