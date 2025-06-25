@@ -1,6 +1,5 @@
 import { Database } from '../../types/supabase';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { supabase } from './index';
 
 export type Product = Database['public']['Tables']['products']['Row'];
 export type NewProduct = Database['public']['Tables']['products']['Insert'];
@@ -8,11 +7,15 @@ export type NewProduct = Database['public']['Tables']['products']['Insert'];
 // Fetch all products
 export const getAllProducts = async (): Promise<Product[]> => {
   try {
-    const response = await fetch(`${API_URL}/products`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
+    const { data, error } = await supabase
+      .from('products')
+      .select('*');
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data || [];
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
@@ -22,11 +25,17 @@ export const getAllProducts = async (): Promise<Product[]> => {
 // Fetch a single product by ID
 export const getProductById = async (id: string): Promise<Product> => {
   try {
-    const response = await fetch(`${API_URL}/products/${id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch product');
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
     throw error;
@@ -36,11 +45,16 @@ export const getProductById = async (id: string): Promise<Product> => {
 // Fetch products by store ID
 export const getProductsByStoreId = async (storeId: string): Promise<Product[]> => {
   try {
-    const response = await fetch(`${API_URL}/products/store/${storeId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch store products');
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('store_id', storeId);
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data || [];
   } catch (error) {
     console.error(`Error fetching products for store ${storeId}:`, error);
     throw error;
@@ -50,17 +64,17 @@ export const getProductsByStoreId = async (storeId: string): Promise<Product[]> 
 // Create a new product
 export const createProduct = async (product: NewProduct): Promise<Product> => {
   try {
-    const response = await fetch(`${API_URL}/products`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(product),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create product');
+    const { data, error } = await supabase
+      .from('products')
+      .insert(product)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error('Error creating product:', error);
     throw error;
@@ -70,17 +84,18 @@ export const createProduct = async (product: NewProduct): Promise<Product> => {
 // Update an existing product
 export const updateProduct = async (id: string, product: Partial<Product>): Promise<Product> => {
   try {
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(product),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update product');
+    const { data, error } = await supabase
+      .from('products')
+      .update(product)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error(`Error updating product ${id}:`, error);
     throw error;
@@ -90,11 +105,13 @@ export const updateProduct = async (id: string, product: Partial<Product>): Prom
 // Delete a product
 export const deleteProduct = async (id: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete product');
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      throw error;
     }
   } catch (error) {
     console.error(`Error deleting product ${id}:`, error);

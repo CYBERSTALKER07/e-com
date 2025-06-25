@@ -1,6 +1,5 @@
 import { Database } from '../../types/supabase';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { supabase } from './index';
 
 export type Order = Database['public']['Tables']['orders']['Row'];
 export type NewOrder = Database['public']['Tables']['orders']['Insert'];
@@ -8,11 +7,15 @@ export type NewOrder = Database['public']['Tables']['orders']['Insert'];
 // Fetch all orders
 export const getAllOrders = async (): Promise<Order[]> => {
   try {
-    const response = await fetch(`${API_URL}/orders`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch orders');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*');
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data || [];
   } catch (error) {
     console.error('Error fetching orders:', error);
     throw error;
@@ -22,11 +25,17 @@ export const getAllOrders = async (): Promise<Order[]> => {
 // Fetch a single order by ID
 export const getOrderById = async (id: string): Promise<Order> => {
   try {
-    const response = await fetch(`${API_URL}/orders/${id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch order');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error(`Error fetching order ${id}:`, error);
     throw error;
@@ -36,11 +45,16 @@ export const getOrderById = async (id: string): Promise<Order> => {
 // Fetch orders by customer ID
 export const getOrdersByCustomerId = async (customerId: string): Promise<Order[]> => {
   try {
-    const response = await fetch(`${API_URL}/orders/customer/${customerId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch customer orders');
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('customer_id', customerId);
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data || [];
   } catch (error) {
     console.error(`Error fetching orders for customer ${customerId}:`, error);
     throw error;
@@ -50,17 +64,17 @@ export const getOrdersByCustomerId = async (customerId: string): Promise<Order[]
 // Create a new order
 export const createOrder = async (order: NewOrder): Promise<Order> => {
   try {
-    const response = await fetch(`${API_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(order),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create order');
+    const { data, error } = await supabase
+      .from('orders')
+      .insert(order)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error('Error creating order:', error);
     throw error;
@@ -70,17 +84,18 @@ export const createOrder = async (order: NewOrder): Promise<Order> => {
 // Update an existing order
 export const updateOrder = async (id: string, order: Partial<Order>): Promise<Order> => {
   try {
-    const response = await fetch(`${API_URL}/orders/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(order),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update order');
+    const { data, error } = await supabase
+      .from('orders')
+      .update(order)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      throw error;
     }
-    return await response.json();
+    
+    return data;
   } catch (error) {
     console.error(`Error updating order ${id}:`, error);
     throw error;
@@ -90,11 +105,13 @@ export const updateOrder = async (id: string, order: Partial<Order>): Promise<Or
 // Delete an order
 export const deleteOrder = async (id: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/orders/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete order');
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      throw error;
     }
   } catch (error) {
     console.error(`Error deleting order ${id}:`, error);
