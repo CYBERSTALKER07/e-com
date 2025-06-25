@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl, 
 import { Text, Button, Card, Title, Avatar, List, Divider, TextInput } from 'react-native-paper';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { RootStackParamList } from '../types/navigation';
 import Navbar from '../components/Layout/Navbar';
 
