@@ -67,22 +67,23 @@ const HomePage = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-            {[1, 2, 3, 4].map((item, index) => (
+          {/* 4 in a row, not scrollable */}
+          <View style={styles.productsRow}>
+            {productImages.map((img, index) => (
               <Card 
-                key={item} 
-                style={styles.productCard} 
-                onPress={() => navigation.navigate('ProductDetail', { id: item.toString() } as never)}
+                key={index} 
+                style={styles.productCardRow} 
+                onPress={() => navigation.navigate('ProductDetail', { id: (index+1).toString() } as never)}
               >
                 <View style={styles.cardImageContainer}>
-                  <Image source={{ uri: productImages[index] }} style={styles.cardImage} />
+                  <Image source={{ uri: img }} style={styles.cardImage} />
                   <Badge style={styles.discountBadge}>-15%</Badge>
                   <TouchableOpacity style={styles.favoriteButton}>
                     <Icon name="heart" size={20} color="#FF6B6B" />
                   </TouchableOpacity>
                 </View>
                 <Card.Content>
-                  <Title style={styles.cardTitle}>Сумка Elegance {item}</Title>
+                  <Title style={styles.cardTitle}>Сумка Elegance {index+1}</Title>
                   <View style={styles.priceContainer}>
                     <Paragraph style={styles.cardPrice}>250,000 UZS</Paragraph>
                     <Paragraph style={styles.oldPrice}>295,000 UZS</Paragraph>
@@ -101,7 +102,7 @@ const HomePage = () => {
                 </Card.Content>
               </Card>
             ))}
-          </ScrollView>
+          </View>
         </View>
 
         {/* Special Offer Banner */}
@@ -183,7 +184,18 @@ const HomePage = () => {
           </View>
           <Button
             mode="outlined"
-            onPress={() => {}}
+            onPress={() => {
+              try {
+                // Navigate to about page or open modal with more information
+                // If you have an AboutPage component:
+                // navigation.navigate('About' as never);
+                // If not, you could show an alert or modal:
+                alert('О компании Bagozza: Мы создаем эксклюзивные сумки с 2020 года, сочетая традиции и инновации.');
+              } catch (error) {
+                console.error('Navigation error:', error);
+                alert('Произошла ошибка. Попробуйте позже.');
+              }
+            }}
             style={styles.aboutButton}
             icon="information"
           >
@@ -260,6 +272,23 @@ const styles = StyleSheet.create({
     color: '#6B4423',
     marginRight: 5,
   },
+  // changed: productsRow and productCardRow for 4 in a row
+  productsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    gap: 10,
+  },
+  productCardRow: {
+    flex: 1,
+    maxWidth: (width - 60) / 4, // 20+20 padding + 10*3 gap = 60
+    minWidth: 120,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 4,
+  },
+  // old horizontal scroll & card
   horizontalScroll: {
     flexDirection: 'row',
     paddingBottom: 10,
@@ -276,8 +305,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   cardImage: {
-    height: 180,
+    height: 120,
     backgroundColor: '#F5F5F5',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    width: '100%',
   },
   discountBadge: {
     position: 'absolute',
@@ -285,6 +317,7 @@ const styles = StyleSheet.create({
     left: 10,
     backgroundColor: '#FF6B6B',
     color: 'white',
+    zIndex: 2,
   },
   favoriteButton: {
     position: 'absolute',
@@ -294,6 +327,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 5,
     elevation: 2,
+    zIndex: 2,
   },
   cardTitle: {
     fontSize: 16,

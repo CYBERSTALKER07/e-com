@@ -10,7 +10,7 @@ interface AdminProductFormProps {
 }
 
 const AdminProductForm: React.FC<AdminProductFormProps> = ({ product, onSave, onCancel }) => {
-  const { userStores } = useStore();
+  const { stores: userStores = [] } = useStore();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');

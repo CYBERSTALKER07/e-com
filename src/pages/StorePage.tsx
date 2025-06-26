@@ -37,7 +37,7 @@ interface BillingAddress {
 }
 
 const StorePage = () => {
-  const { userStores, loading, createStore, updateStore, deleteStore } = useStore();
+  const { stores: userStores, loading, addStore: createStore, editStore: updateStore, removeStore: deleteStore } = useStore();
   const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   const [newStore, setNewStore] = useState<CreateStoreDTO>({ name: '', description: '' });
@@ -85,7 +85,7 @@ const StorePage = () => {
       const { data: orders, error } = await supabase
         .from('orders')
         .select('*')
-        .contains('items', [{ product: { store_id: storeId } }])
+        .filter('items', 'cs', `[{"product":{"store_id":"${storeId}"}}]`)
         .neq('status', 'cancelled');
 
       if (error) throw error;
@@ -112,6 +112,17 @@ const StorePage = () => {
   // When a store is selected, fetch its products and orders
   useEffect(() => {
     if (selectedStore) {
+      // Initialize empty arrays in state to prevent map errors
+      setStoreProducts(prev => ({
+        ...prev,
+        [selectedStore.id]: prev[selectedStore.id] || []
+      }));
+      setStoreOrders(prev => ({
+        ...prev,
+        [selectedStore.id]: prev[selectedStore.id] || []
+      }));
+      
+      // Then fetch data
       fetchStoreProducts(selectedStore.id);
       fetchStoreOrders(selectedStore.id);
     }
@@ -194,8 +205,9 @@ const StorePage = () => {
         }
       }
 
+      // Clean up product data to match Supabase schema
       const productData = {
-        ...product,
+        id: product.id,
         name: product.name.trim(),
         description: product.description.trim(),
         price: Number(product.price),
@@ -206,6 +218,11 @@ const StorePage = () => {
         is_visible: true,
         sku: product.sku || `SKU-${Date.now()}`
       };
+
+      // Remove undefined id for new products
+      if (!productData.id) {
+        delete productData.id;
+      }
 
       const { data, error } = await supabase
         .from('products')
@@ -258,6 +275,8 @@ const StorePage = () => {
     if (!window.confirm('Вы уверены, что хотите удалить этот товар?')) return;
 
     try {
+      setIsLoadingProducts(true); // Show loading indicator while deleting
+
       const { error } = await supabase
         .from('products')
         .delete()
@@ -265,15 +284,39 @@ const StorePage = () => {
 
       if (error) throw error;
 
+      // Update local state immediately
       setStoreProducts(prev => ({
         ...prev,
         [selectedStore!.id]: prev[selectedStore!.id].filter(p => p.id !== productId)
       }));
+      
+      // Re-fetch the products list from the server to ensure sync
+      if (selectedStore) {
+        const { data: refreshedProducts, error: refreshError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('store_id', selectedStore.id);
+          
+        if (!refreshError && refreshedProducts) {
+          const typedProducts: Product[] = refreshedProducts.map(p => ({
+            ...p,
+            category: p.category || '',
+            specifications: {}
+          }));
+          
+          setStoreProducts(prev => ({
+            ...prev,
+            [selectedStore.id]: typedProducts
+          }));
+        }
+      }
 
       toast.success('Товар удален');
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error('Не удалось удалить товар');
+    } finally {
+      setIsLoadingProducts(false); // Hide loading indicator
     }
   };
 
@@ -486,7 +529,7 @@ const StorePage = () => {
                 )}
 
                 <div className="space-y-4">
-                  {userStores.map((store) => (
+                  {userStores && userStores.length > 0 ? userStores.map((store) => (
                     <div 
                       key={store.id} 
                       className={`p-4 rounded-lg cursor-pointer transition-all duration-300 ${
@@ -517,7 +560,11 @@ const StorePage = () => {
                         </span>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center py-4 text-gray-500">
+                      У вас пока нет магазинов
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
