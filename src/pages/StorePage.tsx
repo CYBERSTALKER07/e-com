@@ -663,43 +663,52 @@ const StorePage = () => {
                         <LoadingSpinner />
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {storeProducts[selectedStore.id]?.map((product) => (
-                            <div key={product.id} className="group bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-                              <div className="relative aspect-w-4 aspect-h-3">
-                                <img 
-                                  src={product.image} 
-                                  alt={product.name} 
-                                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                                />
-                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300" />
-                              </div>
-                              <div className="p-4">
-                                <h3 className="font-bold text-lg mb-2 text-gray-900">{product.name}</h3>
-                                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                                <div className="flex items-center justify-between mb-4">
-                                  <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
-                                  <span className="text-sm text-gray-500">Stock: {product.stock_quantity}</span>
+                          {storeProducts[selectedStore.id] && storeProducts[selectedStore.id].length > 0 ? 
+                            storeProducts[selectedStore.id].map((product) => (
+                              <div key={product.id} className="group bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
+                                <div className="relative aspect-w-4 aspect-h-3">
+                                  <img 
+                                    src={product.image} 
+                                    alt={product.name} 
+                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300" />
                                 </div>
-                                <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                  <button
-                                    onClick={() => {
-                                      setEditingProduct(product);
-                                      setIsProductFormOpen(true);
-                                    }}
-                                    className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteProduct(product.id)}
-                                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
-                                  >
-                                    Delete
-                                  </button>
+                                <div className="p-4">
+                                  <h3 className="font-bold text-lg mb-2 text-gray-900">{product.name}</h3>
+                                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                                  <div className="flex items-center justify-between mb-4">
+                                    <p className="text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                                    <span className="text-sm text-gray-500">Stock: {product.stock_quantity}</span>
+                                  </div>
+                                  <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <button
+                                      onClick={() => {
+                                        setEditingProduct(product);
+                                        setIsProductFormOpen(true);
+                                      }}
+                                      className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteProduct(product.id)}
+                                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))
+                            : (
+                              <div className="col-span-3 text-center py-12 bg-gray-50 rounded-lg">
+                                <PackageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">No products yet</h3>
+                                <p className="mt-1 text-sm text-gray-500">Add products to your store to start selling.</p>
+                              </div>
+                            )
+                          }
                         </div>
                       )}
                     </div>

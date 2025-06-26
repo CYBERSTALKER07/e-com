@@ -9,4 +9,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Create a strong singleton implementation with a guaranteed single instance
+class SupabaseClientSingleton {
+  private static instance: ReturnType<typeof createClient<Database>> | null = null;
+  
+  private constructor() {}
+  
+  public static getInstance(): ReturnType<typeof createClient<Database>> {
+    if (!SupabaseClientSingleton.instance) {
+      SupabaseClientSingleton.instance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          storageKey: 'bagozza-auth-storage-key',
+        }
+      });
+    }
+    
+    return SupabaseClientSingleton.instance;
+  }
+}
+
+export const supabase = SupabaseClientSingleton.getInstance();
+
+// Important: Always import the supabase instance from this file
+// Do not create new instances with createClient() elsewhere
