@@ -113,7 +113,26 @@ const HomePage: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900">Featured Products</h2>
             <p className="mt-4 text-xl text-gray-600">Discover our most popular items</p>
           </div>
-          <ProductGrid products={featuredProducts} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 auto-rows-fr">
+            {featuredProducts.map(product => (
+              <div key={product.id} className="h-full">
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
+                  <div className="aspect-w-4 aspect-h-3">
+                    <img 
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover object-center"
+                    />
+                  </div>
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="font-medium text-gray-900">{product.name}</h3>
+                    <p className="mt-2 text-gray-500 text-sm line-clamp-2">{product.description}</p>
+                    <p className="mt-auto pt-4 text-lg font-bold text-primary">${product.price.toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="text-center mt-12">
             <Link
               to="/products"
