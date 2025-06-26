@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout/Layout';
 import { X, Package as PackageIcon, ShoppingBag, Clock, DollarSign } from 'lucide-react';
+import { deleteProduct } from '../services/api/products'; // Fixed import path
 
 interface StoreOrder {
   id: string;
@@ -273,45 +274,33 @@ const StorePage = () => {
 
   const handleDeleteProduct = async (productId: string) => {
     if (!window.confirm('Вы уверены, что хотите удалить этот товар?')) return;
-
+    
     try {
       setIsLoadingProducts(true); // Show loading indicator while deleting
 
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
+      // Use the enhanced deleteProduct function from the API
+      const { success, error } = await deleteProduct(productId, {
+        onSuccess: () => {
+          toast.success('Товар успешно удален');
+        },
+        onError: (err) => {
+          console.error('Error deleting product:', err);
+          toast.error('Не удалось удалить товар');
+        }
+      });
 
-      if (error) throw error;
-
-      // Update local state immediately
-      setStoreProducts(prev => ({
-        ...prev,
-        [selectedStore!.id]: prev[selectedStore!.id].filter(p => p.id !== productId)
-      }));
-      
-      // Re-fetch the products list from the server to ensure sync
-      if (selectedStore) {
-        const { data: refreshedProducts, error: refreshError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('store_id', selectedStore.id);
-          
-        if (!refreshError && refreshedProducts) {
-          const typedProducts: Product[] = refreshedProducts.map(p => ({
-            ...p,
-            category: p.category || '',
-            specifications: {}
-          }));
-          
-          setStoreProducts(prev => ({
-            ...prev,
-            [selectedStore.id]: typedProducts
-          }));
+      if (success) {
+        // Update local state immediately
+        setStoreProducts(prev => ({
+          ...prev,
+          [selectedStore!.id]: prev[selectedStore!.id].filter(p => p.id !== productId)
+        }));
+        
+        // Re-fetch the products list from the server to ensure sync
+        if (selectedStore) {
+          await fetchStoreProducts(selectedStore.id);
         }
       }
-
-      toast.success('Товар удален');
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error('Не удалось удалить товар');

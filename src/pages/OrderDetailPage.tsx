@@ -1,33 +1,113 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Package, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
 import Layout from '../components/Layout/Layout';
 import { useOrder } from '../context/OrderContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { OrderStatus } from '../types';
+import { supabase } from '../lib/supabase';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
 
 const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { getOrder } = useOrder();
-  const { isAuthenticated, user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const order = id ? getOrder(id) : undefined;
+  const [order, setOrder] = useState(id ? getOrder(id) : undefined);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch order data from Supabase if not available in context
+  useEffect(() => {
+    const fetchOrderFromSupabase = async () => {
+      if (!id || order) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const { data, error: supabaseError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (supabaseError) {
+          throw supabaseError;
+        }
+        
+        if (data) {
+          // Transform the Supabase data to match our order type
+          const formattedOrder = {
+            ...data,
+            customerEmail: data.customer_email || '',
+            createdAt: data.created_at,
+            estimatedDelivery: data.estimated_delivery,
+            shippingAddress: data.shipping_address,
+            billingAddress: data.billing_address,
+            paymentMethod: data.payment_method,
+            items: data.items || []
+          };
+          
+          setOrder(formattedOrder);
+        } else {
+          setError('Order not found');
+        }
+      } catch (err) {
+        console.error('Error fetching order:', err);
+        setError('Failed to load order. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchOrderFromSupabase();
+  }, [id, order]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    } else if (!order) {
-      navigate('/orders');
-    } else if (!isAdmin && order.customerEmail !== user?.email) {
+    if (!user) {
+      navigate('/login', { replace: true });
+    } else if (error) {
+      // If there's an error fetching the order, redirect after a delay
+      const timer = setTimeout(() => navigate('/orders'), 3000);
+      return () => clearTimeout(timer);
+    } else if (order && user.email !== order.customerEmail && !user.isAdmin) {
       // If not admin and not the order owner, redirect
-      navigate('/orders');
+      navigate('/orders', { replace: true });
     }
-  }, [isAuthenticated, order, user, isAdmin, navigate]);
+  }, [user, order, error, navigate]);
 
-  if (!isAuthenticated || !order) {
-    return null; // Will redirect
+  // Show loading state while fetching order
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Layout>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <div className="bg-red-50 p-6 rounded-lg">
+            <h2 className="text-xl font-medium text-red-800 mb-2">Error</h2>
+            <p className="text-red-700">{error}</p>
+            <p className="mt-4 text-gray-600">Redirecting to orders page...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If no order or no user, show nothing (we'll redirect)
+  if (!order || !user) {
+    return null;
   }
 
   const getStatusIcon = (status: OrderStatus) => {
