@@ -2195,7 +2195,7 @@ export const oldMoneyImages = [
 
         {galleryMode === 'aesthetic' ? (
           /* Old Money Aesthetic Gallery */
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4">
+          <div className="columns-2 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4">
             {oldMoneyImages.map((imageUrl, index) => {
               const imageId = `aesthetic-${index}`;
               return (
