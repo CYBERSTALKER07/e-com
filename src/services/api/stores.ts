@@ -42,13 +42,57 @@ export const getStoreById = async (id: string): Promise<Store> => {
   }
 };
 
-// Fetch stores by owner ID
-export const getStoresByOwnerId = async (ownerId: string): Promise<Store[]> => {
+// Fix: Add function to get current user's stores specifically
+export const getUserStores = async (): Promise<Store[]> => {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      console.warn('No authenticated user for fetching stores');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('stores')
       .select('*')
-      .eq('owner_id', ownerId);
+      .eq('owner_id', session.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user stores:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserStores:', error);
+    return [];
+  }
+};
+
+// Keep existing getStoresByOwnerId but ensure it validates ownership
+export const getStoresByOwnerId = async (ownerId: string): Promise<Store[]> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Check if user is trying to access their own stores or if they're admin
+    if (session?.user?.id !== ownerId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session?.user?.id)
+        .single();
+        
+      if (profile?.role !== 'admin') {
+        throw new Error('Access denied: You can only view your own stores');
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false });
     
     if (error) {
       throw error;
@@ -62,43 +106,67 @@ export const getStoresByOwnerId = async (ownerId: string): Promise<Store[]> => {
 };
 
 // Create a new store
-export const createStore = async (store: NewStore): Promise<Store> => {
+export const createStore = async (store: NewStore): Promise<Store | null> => {
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      throw new Error('User must be authenticated to create stores');
+    }
+
+    // Validate required fields
+    if (!store.name || !store.owner_id) {
+      throw new Error('Store name and owner_id are required');
+    }
+
     const { data, error } = await supabase
       .from('stores')
-      .insert(store)
+      .insert({
+        ...store,
+        created_at: new Date().toISOString(),
+        is_active: true
+      })
       .select()
       .single();
-    
+
     if (error) {
+      console.error('Store creation error:', error);
       throw error;
     }
-    
+
     return data;
   } catch (error) {
     console.error('Error creating store:', error);
-    throw error;
+    return null;
   }
 };
 
 // Update an existing store
-export const updateStore = async (id: string, store: Partial<Store>): Promise<Store> => {
+export const updateStore = async (id: string, updates: Partial<Store>): Promise<Store | null> => {
   try {
+    if (!id) {
+      throw new Error('Store ID is required');
+    }
+
     const { data, error } = await supabase
       .from('stores')
-      .update(store)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) {
+      console.error(`Error updating store ${id}:`, error);
       throw error;
     }
-    
+
     return data;
   } catch (error) {
-    console.error(`Error updating store ${id}:`, error);
-    throw error;
+    console.error(`Error in updateStore for ${id}:`, error);
+    return null;
   }
 };
 

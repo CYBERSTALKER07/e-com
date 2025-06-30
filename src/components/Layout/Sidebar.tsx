@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Heart, Clock, Settings, User } from 'lucide-react';
+import { Home, ShoppingBag, Heart, Clock, Settings, User, Grid } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../context/CartContext';
 
@@ -34,6 +34,16 @@ const Sidebar: React.FC = () => {
           title="Магазин"
         >
           <ShoppingBag className="h-6 w-6" />
+        </Link>
+
+        <Link 
+          to="/gallery" 
+          className={`flex items-center justify-center h-[70px] ${
+            isActive('/gallery') ? 'text-primary' : 'text-gray-700 hover:text-primary'
+          }`}
+          title="Галерея"
+        >
+          <Grid className="h-6 w-6" />
         </Link>
 
         <Link 

@@ -3,6 +3,7 @@ import {
   getAllStores, 
   getStoreById,
   getStoresByOwnerId,
+  getUserStores,
   createStore,
   updateStore,
   deleteStore,
@@ -34,21 +35,57 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      fetchStores();
+    if (user?.id) {
+      fetchUserStores();
+    } else {
+      // Clear stores when user logs out
+      setStores([]);
+      setSelectedStore(null);
     }
   }, [user]);
 
-  const fetchStores = async () => {
+  // Use the new getUserStores function
+  const fetchUserStores = async () => {
+    if (!user?.id) {
+      setStores([]);
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
-      const fetchedStores = await getAllStores();
+      const userStores = await getUserStores();
+      setStores(userStores);
+      
+      // If no store is selected but user has stores, select the first one
+      if (!selectedStore && userStores.length > 0) {
+        setSelectedStore(userStores[0]);
+      }
+    } catch (err) {
+      setError('Failed to fetch your stores');
+      console.error('Failed to fetch user stores:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Also update the fetchStores method to use getUserStores
+  const fetchStores = async () => {
+    if (!user?.id) {
+      console.warn('No user ID available for fetching stores');
+      setStores([]);
+      return [];
+    }
+    
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedStores = await getUserStores();
       setStores(fetchedStores);
       return fetchedStores;
     } catch (err) {
-      setError('Failed to fetch stores');
-      console.error('Failed to fetch stores:', err);
+      setError('Failed to fetch your stores');
+      console.error('Failed to fetch user stores:', err);
       return [];
     } finally {
       setLoading(false);
@@ -89,8 +126,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       setLoading(true);
       setError(null);
-      const newStore = await createStore(storeData as any);
-      setStores(prevStores => [...prevStores, newStore]);
+      
+      // Ensure owner_id is set to current user
+      const newStoreData = {
+        ...storeData,
+        owner_id: user?.id
+      };
+      
+      const newStore = await createStore(newStoreData as any);
+      if (newStore) {
+        setStores(prevStores => [newStore, ...prevStores]);
+        // Auto-select the new store
+        setSelectedStore(newStore);
+      }
       return newStore;
     } catch (err) {
       setError('Failed to create store');
@@ -158,7 +206,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedStore,
     loading,
     error,
-    fetchStores,
+    fetchStores: fetchUserStores, // Use the user-specific fetch method
     fetchStoreById,
     fetchStoresByOwner,
     addStore,

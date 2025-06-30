@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { toast } from 'react-hot-toast';
@@ -37,48 +37,96 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAdmin } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const createOrder = async (
     customerName: string,
     customerEmail: string,
     items: CartItem[],
-    shippingAddress: ShippingAddress,
-    billingAddress: BillingAddress,
+    shippingAddress: any,
+    billingAddress: any,
     paymentMethod: string,
     total: number
   ): Promise<Order | null> => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      if (!user) {
-        toast.error('You must be logged in to create an order');
-        return null;
+      // Validate input data
+      if (!customerName || !customerEmail || !items.length) {
+        throw new Error('Missing required order information');
       }
 
-      const newOrder = {
-        customer_id: user.id,
-        status: 'pending' as OrderStatus,
-        total,
+      if (total <= 0) {
+        throw new Error('Order total must be greater than zero');
+      }
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const orderData = {
+        customer_id: session?.user?.id || null,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        items: items,
+        total: total,
         shipping_address: shippingAddress,
         billing_address: billingAddress,
         payment_method: paymentMethod,
-        items
+        status: 'pending' as OrderStatus,
+        created_at: new Date().toISOString(),
+        estimated_delivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       };
 
       const { data, error } = await supabase
         .from('orders')
-        .insert(newOrder)
+        .insert(orderData)
         .select()
         .single();
 
       if (error) {
-        throw error;
+        console.error('Supabase order creation error:', error);
+        throw new Error(`Failed to create order: ${error.message}`);
       }
 
-      toast.success('Order created successfully!');
-      return data as Order;
+      if (!data) {
+        throw new Error('No order data returned from database');
+      }
+
+      // Transform the data to match our Order interface
+      const newOrder: Order = {
+        id: data.id,
+        customerName: data.customer_name || customerName,
+        customerEmail: data.customer_email || customerEmail,
+        customerId: data.customer_id,
+        items: Array.isArray(data.items) ? data.items : [],
+        total: data.total,
+        status: data.status as OrderStatus,
+        createdAt: data.created_at,
+        shippingAddress: data.shipping_address,
+        billingAddress: data.billing_address,
+        paymentMethod: data.payment_method,
+        estimatedDelivery: data.estimated_delivery,
+        timeline: [
+          {
+            status: 'Order placed',
+            date: new Date().toLocaleString()
+          }
+        ]
+      };
+
+      // Add to local state
+      setOrders(prev => [newOrder, ...prev]);
+      
+      return newOrder;
     } catch (error) {
       console.error('Error creating order:', error);
-      toast.error('Failed to create order');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
+      setError(errorMessage);
       return null;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,27 +205,64 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateOrderStatus = async (id: string, status: OrderStatus): Promise<boolean> => {
-    try {
-      if (!isAdmin) {
-        toast.error('Unauthorized access');
-        return false;
-      }
+    if (!id || !status) {
+      console.error('Order ID and status are required');
+      return false;
+    }
 
-      const { error } = await supabase
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
         .from('orders')
-        .update({ status })
-        .eq('id', id);
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) {
+        console.error('Error updating order status:', error);
         throw error;
       }
 
-      toast.success(`Order status updated to ${status}`);
+      // Update local state
+      setOrders(prev => prev.map(order => {
+        if (order.id === id) {
+          const newEvent = {
+            status: 
+              status === 'processing' ? 'Order confirmed' :
+              status === 'shipped' ? 'Order shipped' :
+              status === 'delivered' ? 'Order delivered' :
+              status === 'cancelled' ? 'Order cancelled' : 
+              'Status updated',
+            date: new Date().toLocaleString()
+          };
+          
+          const timeline = [...order.timeline];
+          if (!timeline.some(event => event.status === newEvent.status)) {
+            timeline.push(newEvent);
+          }
+          
+          return {
+            ...order,
+            status,
+            timeline
+          };
+        }
+        return order;
+      }));
+      
       return true;
     } catch (error) {
       console.error('Error updating order status:', error);
-      toast.error('Failed to update order status');
+      setError('Failed to update order status');
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 

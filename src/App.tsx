@@ -14,7 +14,7 @@ import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
-import PaymentCompletePage from './pages/PaymentCompletePage';
+import OrderCompletePage from './pages/PaymentCompletePage'; // Renamed from PaymentCompletePage
 import OrdersPage from './pages/Orders/OrdersPage';
 import OrderDetailPage from './pages/Orders/OrderDetailPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
@@ -24,6 +24,7 @@ import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Auth/ResetPasswordPage';
 import StorePage from './pages/StorePage';
 import UpgradePlanPage from './pages/UpgradePlanPage';
+import GalleryPage from './pages/GalleryPage';
 
 function App() {
   useEffect(() => {
@@ -45,9 +46,10 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/checkout/complete" element={<PaymentCompletePage />} />
+                <Route path="/order-complete" element={<OrderCompletePage />} />
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/orders/:id" element={<OrderDetailPage />} />
                 <Route path="/admin" element={<AdminDashboardPage />} />

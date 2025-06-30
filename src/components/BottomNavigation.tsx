@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Heart, Clock, User } from 'lucide-react';
+import { Home, ShoppingBag, Heart, Clock, Grid } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const BottomNavigation: React.FC = () => {
@@ -31,6 +31,14 @@ const BottomNavigation: React.FC = () => {
         </Link>
         
         <Link 
+          to="/gallery" 
+          className={`flex flex-col items-center justify-center w-full h-full ${isActive('/gallery') ? 'text-primary' : 'text-gray-500'}`}
+        >
+          <Grid className="h-6 w-6" />
+          <span className="text-xs mt-1">Gallery</span>
+        </Link>
+        
+        <Link 
           to="/cart" 
           className={`flex flex-col items-center justify-center w-full h-full ${isActive('/cart') ? 'text-primary' : 'text-gray-500'}`}
         >
@@ -51,14 +59,6 @@ const BottomNavigation: React.FC = () => {
         >
           <Clock className="h-6 w-6" />
           <span className="text-xs mt-1">Orders</span>
-        </Link>
-        
-        <Link 
-          to="/login" 
-          className={`flex flex-col items-center justify-center w-full h-full ${isActive('/login') ? 'text-primary' : 'text-gray-500'}`}
-        >
-          <User className="h-6 w-6" />
-          <span className="text-xs mt-1">Account</span>
         </Link>
       </div>
     </div>

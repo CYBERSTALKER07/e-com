@@ -49,33 +49,8 @@ router.get('/:id', async (req: RequestWithDB, res) => {
   }
 });
 
-// GET store by owner ID - requires authentication
-router.get('/owner/:ownerId', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
-  try {
-    const { ownerId } = req.params;
-    const { db } = req;
-    
-    // Users can only see their own stores unless they're admins
-    if (req.user?.id !== ownerId && req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    
-    const { data, error } = await db
-      .from('stores')
-      .select('*')
-      .eq('owner_id', ownerId);
-    
-    if (error) throw error;
-    
-    return res.status(200).json(data);
-  } catch (error) {
-    console.error(`Error fetching stores for owner ${req.params.ownerId}:`, error);
-    return res.status(500).json({ error: 'Failed to fetch owner stores' });
-  }
-});
-
 // GET current user's stores - requires authentication
-router.get('/me/stores', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
+router.get('/my-stores', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
   try {
     const userId = req.user?.id;
     const { db } = req;
@@ -83,14 +58,41 @@ router.get('/me/stores', requireAuth, async (req: RequestWithDB & AuthRequest, r
     const { data, error } = await db
       .from('stores')
       .select('*')
-      .eq('owner_id', userId);
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return res.status(200).json(data);
+    return res.status(200).json(data || []);
   } catch (error) {
     console.error('Error fetching user stores:', error);
-    return res.status(500).json({ error: 'Failed to fetch user stores' });
+    return res.status(500).json({ error: 'Failed to fetch your stores' });
+  }
+});
+
+// GET store by owner ID - requires authentication and ownership check
+router.get('/owner/:ownerId', requireAuth, async (req: RequestWithDB & AuthRequest, res) => {
+  try {
+    const { ownerId } = req.params;
+    const { db } = req;
+    
+    // Users can only see their own stores unless they're admins
+    if (req.user?.id !== ownerId && req.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied: You can only view your own stores' });
+    }
+
+    const { data, error } = await db
+      .from('stores')
+      .select('*')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return res.status(200).json(data || []);
+  } catch (error) {
+    console.error(`Error fetching stores for owner ${req.params.ownerId}:`, error);
+    return res.status(500).json({ error: 'Failed to fetch stores' });
   }
 });
 

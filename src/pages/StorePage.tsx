@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../hooks/useAuth';
-import { Store, CreateStoreDTO, Product, CartItem } from '../types';
+import { Store, CreateStoreDTO, Product, CartItem, OrderStatus } from '../types';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import AdminProductForm from '../components/Admin/AdminProductForm';
+import StoreOrderCard from '../components/Store/StoreOrderCard';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import Layout from '../components/Layout/Layout';
-import { X, Package as PackageIcon, ShoppingBag, Clock, DollarSign } from 'lucide-react';
+import { X, Package as PackageIcon, ShoppingBag, Clock, DollarSign, Filter } from 'lucide-react';
 import { deleteProduct } from '../services/api/products'; // Fixed import path
 
 interface StoreOrder {
@@ -38,12 +39,11 @@ interface BillingAddress {
 }
 
 const StorePage = () => {
-  const { stores: userStores, loading, addStore: createStore, editStore: updateStore, removeStore: deleteStore } = useStore();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { stores, selectedStore, loading: storesLoading, fetchStores, addStore, editStore, removeStore, selectStore } = useStore();
   const [isCreating, setIsCreating] = useState(false);
   const [newStore, setNewStore] = useState<CreateStoreDTO>({ name: '', description: '' });
   const [editingStore, setEditingStore] = useState<Store | null>(null);
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [storeProducts, setStoreProducts] = useState<Record<string, Product[]>>({});
@@ -51,6 +51,7 @@ const StorePage = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
   const [storeOrders, setStoreOrders] = useState<Record<string, StoreOrder[]>>({});
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [orderFilter, setOrderFilter] = useState<OrderStatus | 'all'>('all');
 
   // Fetch products for a store
   const fetchStoreProducts = async (storeId: string) => {
@@ -111,7 +112,7 @@ const StorePage = () => {
   };
 
   // When a store is selected, fetch its products and orders
-  useEffect(() => {
+  React.useEffect(() => {
     if (selectedStore) {
       // Initialize empty arrays in state to prevent map errors
       setStoreProducts(prev => ({
@@ -137,11 +138,11 @@ const StorePage = () => {
       return;
     }
 
-    const store = await createStore(newStore);
+    const store = await addStore(newStore);
     if (store) {
       setIsCreating(false);
       setNewStore({ name: '', description: '' });
-      setSelectedStore(store);
+      selectStore(store);
     }
   };
 
@@ -156,21 +157,21 @@ const StorePage = () => {
       // Remove is_active as it's not in UpdateStoreDTO
     };
     
-    const updated = await updateStore(updateData);
+    const updated = await editStore(updateData);
     
     if (updated) {
       setEditingStore(null);
       if (selectedStore?.id === updated.id) {
-        setSelectedStore(updated);
+        selectStore(updated);
       }
     }
   };
 
   const handleDeleteStore = async (id: string) => {
     if (window.confirm('Вы уверены, что хотите удалить этот магазин?')) {
-      const success = await deleteStore(id);
+      const success = await removeStore(id);
       if (success && selectedStore?.id === id) {
-        setSelectedStore(null);
+        selectStore(null);
       }
     }
   };
@@ -309,7 +310,50 @@ const StorePage = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  // Update order status callback
+  const handleOrderStatusUpdate = (orderId: string, newStatus: OrderStatus) => {
+    if (!selectedStore) return;
+    
+    setStoreOrders(prev => ({
+      ...prev,
+      [selectedStore.id]: prev[selectedStore.id]?.map(order => 
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ) || []
+    }));
+  };
+
+  // Filter orders based on status
+  const getFilteredOrders = () => {
+    if (!selectedStore || !storeOrders[selectedStore.id]) return [];
+    
+    const orders = storeOrders[selectedStore.id];
+    if (orderFilter === 'all') {
+      return orders;
+    }
+    return orders.filter(order => order.status === orderFilter);
+  };
+
+  const filteredOrders = getFilteredOrders();
+
+  // Calculate order statistics
+  const getOrderStats = () => {
+    if (!selectedStore || !storeOrders[selectedStore.id]) {
+      return { pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0 };
+    }
+    
+    const orders = storeOrders[selectedStore.id];
+    return {
+      pending: orders.filter(o => o.status === 'pending').length,
+      processing: orders.filter(o => o.status === 'processing').length,
+      shipped: orders.filter(o => o.status === 'shipped').length,
+      delivered: orders.filter(o => o.status === 'delivered').length,
+      cancelled: orders.filter(o => o.status === 'cancelled').length,
+    };
+  };
+
+  const orderStats = getOrderStats();
+
+  if (storesLoading) return <LoadingSpinner />;
 
   if (!user) {
     return (
@@ -518,7 +562,7 @@ const StorePage = () => {
                 )}
 
                 <div className="space-y-4">
-                  {userStores && userStores.length > 0 ? userStores.map((store) => (
+                  {stores && stores.length > 0 ? stores.map((store) => (
                     <div 
                       key={store.id} 
                       className={`p-4 rounded-lg cursor-pointer transition-all duration-300 ${
@@ -526,7 +570,7 @@ const StorePage = () => {
                           ? 'bg-primary/10 border-2 border-primary shadow-md' 
                           : 'bg-white hover:bg-gray-50 border border-gray-200'
                       }`}
-                      onClick={() => setSelectedStore(store)}
+                      onClick={() => selectStore(store)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium text-gray-900">{store.name}</h3>
@@ -664,7 +708,8 @@ const StorePage = () => {
                         }`}
                         onClick={() => setActiveTab('products')}
                       >
-                        Товары
+                        <PackageIcon className="h-4 w-4 mr-2" />
+                        Товары ({storeProducts[selectedStore.id]?.length || 0})
                       </button>
                       <button
                         className={`px-4 py-3 font-medium text-sm flex items-center ${
@@ -674,7 +719,8 @@ const StorePage = () => {
                         }`}
                         onClick={() => setActiveTab('orders')}
                       >
-                        Заказы
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        Заказы ({storeOrders[selectedStore.id]?.length || 0})
                       </button>
                     </div>
                   </div>
@@ -750,117 +796,129 @@ const StorePage = () => {
                     </div>
                   )}
 
-                  {/* Orders Section */}
+                  {/* Enhanced Orders Section */}
                   {activeTab === 'orders' && (
                     <div className="p-6">
                       <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold">Orders</h2>
-                        <div className="flex space-x-4">
+                        <h2 className="text-xl font-bold">Управление заказами</h2>
+                        
+                        {/* Order Statistics */}
+                        <div className="flex items-center space-x-4 text-sm">
                           <div className="flex items-center">
-                            <span className="w-3 h-3 rounded-full bg-yellow-400 mr-2"></span>
-                            <span className="text-sm text-gray-600">Pending</span>
+                            <div className="w-3 h-3 rounded-full bg-yellow-400 mr-2"></div>
+                            <span className="text-gray-600">Ожидают: {orderStats.pending}</span>
                           </div>
                           <div className="flex items-center">
-                            <span className="w-3 h-3 rounded-full bg-blue-500 mr-2"></span>
-                            <span className="text-sm text-gray-600">Processing</span>
+                            <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                            <span className="text-gray-600">В работе: {orderStats.processing}</span>
                           </div>
                           <div className="flex items-center">
-                            <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
-                            <span className="text-sm text-gray-600">Delivered</span>
+                            <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                            <span className="text-gray-600">Отправлены: {orderStats.shipped}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                            <span className="text-gray-600">Доставлены: {orderStats.delivered}</span>
                           </div>
                         </div>
                       </div>
+
+                      {/* Order Filter */}
+                      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Filter className="h-5 w-5 text-gray-500" />
+                          <h3 className="font-medium text-gray-900">Фильтр заказов</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => setOrderFilter('all')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'all' 
+                                ? 'bg-primary text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            Все ({storeOrders[selectedStore.id]?.length || 0})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter('pending')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'pending' 
+                                ? 'bg-yellow-500 text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            Ожидают ({orderStats.pending})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter('processing')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'processing' 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            В работе ({orderStats.processing})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter('shipped')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'shipped' 
+                                ? 'bg-purple-500 text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            Отправлены ({orderStats.shipped})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter('delivered')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'delivered' 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            Доставлены ({orderStats.delivered})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter('cancelled')}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                              orderFilter === 'cancelled' 
+                                ? 'bg-red-500 text-white' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                            }`}
+                          >
+                            Отменены ({orderStats.cancelled})
+                          </button>
+                        </div>
+                      </div>
+
                       {isLoadingOrders ? (
-                        <LoadingSpinner />
-                      ) : !storeOrders[selectedStore.id]?.length ? (
+                        <div className="flex justify-center py-12">
+                          <LoadingSpinner />
+                        </div>
+                      ) : filteredOrders.length === 0 ? (
                         <div className="text-center py-12 bg-gray-50 rounded-lg">
                           <PackageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                          <h3 className="mt-2 text-sm font-medium text-gray-900">No orders yet</h3>
-                          <p className="mt-1 text-sm text-gray-500">Start selling to see your orders here.</p>
+                          <h3 className="mt-2 text-sm font-medium text-gray-900">
+                            {orderFilter === 'all' ? 'Заказов пока нет' : `Нет заказов со статусом "${orderFilter}"`}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {orderFilter === 'all' 
+                              ? 'Когда клиенты сделают заказы, они появятся здесь.'
+                              : 'Попробуйте выбрать другой фильтр или проверьте позже.'
+                            }
+                          </p>
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {storeOrders[selectedStore.id]?.map((order) => (
-                            <div key={order.id} className="bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-                              <div className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                  <div>
-                                    <h3 className="text-lg font-semibold">Order #{order.id.substring(0, 8)}</h3>
-                                    <div className="mt-1 space-y-1">
-                                      <p className="text-sm text-gray-600">
-                                        Placed on: {new Date(order.created_at).toLocaleDateString('en-US', {
-                                          year: 'numeric',
-                                          month: 'long',
-                                          day: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
-                                        })}
-                                      </p>
-                                      <p className="text-sm text-gray-600">
-                                        Customer: {order.shipping_address.fullName}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                    order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                                    order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {order.status === 'pending' ? 'Pending' :
-                                     order.status === 'processing' ? 'Processing' :
-                                     order.status === 'shipped' ? 'Shipped' :
-                                     order.status === 'delivered' ? 'Delivered' :
-                                     'Cancelled'}
-                                  </div>
-                                </div>
-                                <div className="border-t border-gray-200 -mx-6 px-6 py-4">
-                                  <div className="space-y-4">
-                                    {(order.items as CartItem[])
-                                      .filter(item => item.product.store_id === selectedStore.id)
-                                      .map(item => (
-                                        <div key={item.product.id} className="flex items-center">
-                                          <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200">
-                                            <img
-                                              src={item.product.image}
-                                              alt={item.product.name}
-                                              className="h-full w-full object-cover object-center"
-                                            />
-                                          </div>
-                                          <div className="ml-4 flex-1">
-                                            <div className="flex justify-between">
-                                              <div>
-                                                <h4 className="font-medium text-gray-900">{item.product.name}</h4>
-                                                <p className="mt-1 text-sm text-gray-500">Qty: {item.quantity}</p>
-                                              </div>
-                                              <div className="text-right">
-                                                <p className="text-sm font-medium text-gray-900">
-                                                  ${(item.product.price * item.quantity).toFixed(2)}
-                                                </p>
-                                                <p className="mt-1 text-sm text-gray-500">
-                                                  ${item.product.price} each
-                                                </p>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div className="border-t border-gray-200 mt-4 pt-4">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Order Total:</span>
-                                    <span className="text-lg font-semibold text-primary">
-                                      ${(order.items as CartItem[])
-                                        .filter(item => item.product.store_id === selectedStore.id)
-                                        .reduce((sum, item) => sum + (item.product.price * item.quantity), 0)
-                                        .toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                          {filteredOrders.map((order) => (
+                            <StoreOrderCard
+                              key={order.id}
+                              order={order}
+                              storeId={selectedStore.id}
+                              onStatusUpdate={handleOrderStatusUpdate}
+                            />
                           ))}
                         </div>
                       )}
