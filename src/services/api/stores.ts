@@ -114,18 +114,25 @@ export const createStore = async (store: NewStore): Promise<Store | null> => {
       throw new Error('User must be authenticated to create stores');
     }
 
+    // Only include fields that actually exist in your stores table schema
+    const storeData = {
+      name: store.name,
+      description: store.description || null,
+      owner_id: store.owner_id || session.user.id,
+      is_active: true
+      // Removed contact_email, contact_phone as they don't exist in schema
+    };
+
     // Validate required fields
-    if (!store.name || !store.owner_id) {
-      throw new Error('Store name and owner_id are required');
+    if (!storeData.name) {
+      throw new Error('Store name is required');
     }
+
+    console.log('Creating store with clean data:', JSON.stringify(storeData));
 
     const { data, error } = await supabase
       .from('stores')
-      .insert({
-        ...store,
-        created_at: new Date().toISOString(),
-        is_active: true
-      })
+      .insert(storeData)
       .select()
       .single();
 
@@ -137,6 +144,7 @@ export const createStore = async (store: NewStore): Promise<Store | null> => {
     return data;
   } catch (error) {
     console.error('Error creating store:', error);
+    // Return null instead of throwing to avoid crashing the application
     return null;
   }
 };

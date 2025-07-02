@@ -69,7 +69,7 @@ export const getProductsByStoreId = async (storeId: string): Promise<Product[]> 
 // Create a new product
 export const createProduct = async (product: NewProduct): Promise<Product | null> => {
   try {
-    // Check for existing session to handle auth issues
+w    // Check for existing session to handle auth issues
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       throw new Error('User must be authenticated to create products');

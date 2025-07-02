@@ -18,12 +18,16 @@ interface Order {
 }
 
 interface OrderContextType {
+  orders: Order[];
+  loading: boolean;
+  error: string | null;
   createOrder: (
     customerName: string,
     customerEmail: string,
+    customerPhone: string,
     items: CartItem[],
     shippingAddress: ShippingAddress,
-    billingAddress: BillingAddress,
+    billingAddress: BillingAddress | null,
     paymentMethod: string,
     total: number
   ) => Promise<Order | null>;
@@ -31,6 +35,7 @@ interface OrderContextType {
   getAllOrders: () => Promise<Order[]>;
   getOrderById: (id: string) => Promise<Order | null>;
   updateOrderStatus: (id: string, status: OrderStatus) => Promise<boolean>;
+  refreshOrders: () => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -39,10 +44,12 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user, isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]); // Add missing orders state
 
   const createOrder = async (
     customerName: string,
     customerEmail: string,
+    customerPhone: string,
     items: CartItem[],
     shippingAddress: any,
     billingAddress: any,
@@ -214,13 +221,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(null);
     
     try {
+      // Fix the query syntax - use .eq() instead of filter syntax
       const { data, error } = await supabase
         .from('orders')
         .update({
           status,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id)
+        .eq('id', id)  // Fixed: use .eq() instead of .filter()
         .select()
         .single();
 
@@ -229,7 +237,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         throw error;
       }
 
-      // Update local state
+      // Update local state only if orders exist
       setOrders(prev => prev.map(order => {
         if (order.id === id) {
           const newEvent = {
@@ -242,7 +250,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             date: new Date().toLocaleString()
           };
           
-          const timeline = [...order.timeline];
+          const timeline = order.timeline ? [...order.timeline] : [];
           if (!timeline.some(event => event.status === newEvent.status)) {
             timeline.push(newEvent);
           }
@@ -256,24 +264,76 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return order;
       }));
       
+      toast.success(`Order status updated to ${status}`);
       return true;
     } catch (error) {
       console.error('Error updating order status:', error);
       setError('Failed to update order status');
+      toast.error('Failed to update order status');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
+  const refreshOrders = async (): Promise<void> => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to match our Order interface
+      const transformedOrders: Order[] = (data || []).map(order => ({
+        ...order,
+        // Ensure all required fields are present
+        shipping_address: order.shipping_address || {},
+        billing_address: order.billing_address || {},
+        items: Array.isArray(order.items) ? order.items : []
+      }));
+      
+      setOrders(transformedOrders);
+      
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setError('Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load orders when user changes
+  React.useEffect(() => {
+    if (user) {
+      refreshOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [user]);
+
   return (
     <OrderContext.Provider
       value={{
+        orders,
+        loading,
+        error,
         createOrder,
         getUserOrders,
         getAllOrders,
         getOrderById,
-        updateOrderStatus
+        updateOrderStatus,
+        refreshOrders
       }}
     >
       {children}

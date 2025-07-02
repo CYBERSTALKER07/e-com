@@ -9,6 +9,7 @@ interface AdminOrderCardProps {
 
 const AdminOrderCard: React.FC<AdminOrderCardProps> = ({ order, onStatusChange }) => {
   const [expanded, setExpanded] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
 
   const getStatusIcon = (status: OrderStatus) => {
     switch (status) {
@@ -30,17 +31,17 @@ const AdminOrderCard: React.FC<AdminOrderCardProps> = ({ order, onStatusChange }
   const getStatusText = (status: OrderStatus) => {
     switch (status) {
       case 'pending':
-        return 'Pending';
+        return 'Ожидает обработки';
       case 'processing':
-        return 'Processing';
+        return 'В обработке';
       case 'shipped':
-        return 'Shipped';
+        return 'Отправлен';
       case 'delivered':
-        return 'Delivered';
+        return 'Доставлен';
       case 'cancelled':
-        return 'Cancelled';
+        return 'Отменен';
       default:
-        return 'Pending';
+        return 'Ожидает обработки';
     }
   };
 
@@ -63,22 +64,29 @@ const AdminOrderCard: React.FC<AdminOrderCardProps> = ({ order, onStatusChange }
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
-    
     try {
-      const date = new Date(dateString);
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        return 'Invalid date';
-      }
-      
-      return new Intl.DateTimeFormat('en-US', {
+      return new Date(dateString).toLocaleDateString('ru-RU', {
         year: 'numeric',
-        month: 'short',
+        month: 'long',
         day: 'numeric',
-      }).format(date);
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: OrderStatus) => {
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
+    try {
+      await onStatusChange(order.id, newStatus);
     } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
+      console.error('Error updating status:', error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -163,37 +171,42 @@ const AdminOrderCard: React.FC<AdminOrderCardProps> = ({ order, onStatusChange }
                 <button
                   type="button"
                   className={`px-3 py-1 rounded-md text-sm font-medium ${order.status === 'pending' ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                  onClick={() => onStatusChange(order.id, 'pending')}
+                  onClick={() => handleStatusUpdate('pending')}
+                  disabled={isUpdating}
                 >
-                  Pending
+                  {isUpdating && order.status === 'pending' ? 'Updating...' : 'Pending'}
                 </button>
                 <button
                   type="button"
                   className={`px-3 py-1 rounded-md text-sm font-medium ${order.status === 'processing' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                  onClick={() => onStatusChange(order.id, 'processing')}
+                  onClick={() => handleStatusUpdate('processing')}
+                  disabled={isUpdating}
                 >
-                  Processing
+                  {isUpdating && order.status === 'processing' ? 'Updating...' : 'Processing'}
                 </button>
                 <button
                   type="button"
                   className={`px-3 py-1 rounded-md text-sm font-medium ${order.status === 'shipped' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                  onClick={() => onStatusChange(order.id, 'shipped')}
+                  onClick={() => handleStatusUpdate('shipped')}
+                  disabled={isUpdating}
                 >
-                  Shipped
+                  {isUpdating && order.status === 'shipped' ? 'Updating...' : 'Shipped'}
                 </button>
                 <button
                   type="button"
                   className={`px-3 py-1 rounded-md text-sm font-medium ${order.status === 'delivered' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                  onClick={() => onStatusChange(order.id, 'delivered')}
+                  onClick={() => handleStatusUpdate('delivered')}
+                  disabled={isUpdating}
                 >
-                  Delivered
+                  {isUpdating && order.status === 'delivered' ? 'Updating...' : 'Delivered'}
                 </button>
                 <button
                   type="button"
                   className={`px-3 py-1 rounded-md text-sm font-medium ${order.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-800'}`}
-                  onClick={() => onStatusChange(order.id, 'cancelled')}
+                  onClick={() => handleStatusUpdate('cancelled')}
+                  disabled={isUpdating}
                 >
-                  Cancelled
+                  {isUpdating && order.status === 'cancelled' ? 'Updating...' : 'Cancelled'}
                 </button>
               </div>
             </div>

@@ -70,9 +70,41 @@ const StoreOrderCard: React.FC<StoreOrderCardProps> = ({ order, storeId, onStatu
     
     setIsUpdating(true);
     try {
+      // Get current user session to verify authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        throw new Error('User must be authenticated');
+      }
+
+      // Check if user is authorized to update this order
+      // Either admin or store owner
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      const { data: store } = await supabase
+        .from('stores')
+        .select('owner_id')
+        .eq('id', storeId)
+        .single();
+
+      const isAdmin = profile?.role === 'admin';
+      const isStoreOwner = store?.owner_id === session.user.id;
+
+      if (!isAdmin && !isStoreOwner) {
+        throw new Error('Unauthorized: Only store owners and admins can update order status');
+      }
+
+      // Update order status
       const { error } = await supabase
         .from('orders')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', order.id);
 
       if (error) throw error;
@@ -85,7 +117,11 @@ const StoreOrderCard: React.FC<StoreOrderCardProps> = ({ order, storeId, onStatu
       }
     } catch (error) {
       console.error('Error updating order status:', error);
-      toast.error('Не удалось обновить статус заказа');
+      if (error instanceof Error) {
+        toast.error(`Ошибка: ${error.message}`);
+      } else {
+        toast.error('Не удалось обновить статус заказа');
+      }
     } finally {
       setIsUpdating(false);
     }

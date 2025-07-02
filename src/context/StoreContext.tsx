@@ -10,6 +10,7 @@ import {
   Store 
 } from '../services/api/stores';
 import { useAuth } from '../hooks/useAuth';
+import { CreateStoreDTO } from '../types';
 
 interface StoreContextType {
   stores: Store[];
@@ -19,7 +20,7 @@ interface StoreContextType {
   fetchStores: () => Promise<void>;
   fetchStoreById: (id: string) => Promise<Store | null>;
   fetchStoresByOwner: (ownerId: string) => Promise<Store[]>;
-  addStore: (store: Omit<Store, 'id' | 'created_at' | 'updated_at'>) => Promise<Store | null>;
+  addStore: (storeData: CreateStoreDTO) => Promise<Store | null>;
   editStore: (id: string, store: Partial<Store>) => Promise<Store | null>;
   removeStore: (id: string) => Promise<boolean>;
   selectStore: (store: Store | null) => void;
@@ -122,27 +123,44 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const addStore = async (storeData: Omit<Store, 'id' | 'created_at' | 'updated_at'>) => {
+  const addStore = async (storeData: CreateStoreDTO) => {
     try {
       setLoading(true);
       setError(null);
       
-      // Ensure owner_id is set to current user
+      if (!user?.id) {
+        const errorMsg = 'User must be logged in to create a store';
+        setError(errorMsg);
+        console.error(errorMsg);
+        return null;
+      }
+      
+      // Format data properly for the API - only include fields that exist in the database
       const newStoreData = {
-        ...storeData,
-        owner_id: user?.id
+        name: storeData.name,
+        description: storeData.description || null,
+        owner_id: user.id
+        // Removed contact_email, contact_phone, address as they don't exist in schema
       };
       
-      const newStore = await createStore(newStoreData as any);
+      console.log('Creating store with cleaned data:', JSON.stringify(newStoreData));
+      
+      const newStore = await createStore(newStoreData);
       if (newStore) {
         setStores(prevStores => [newStore, ...prevStores]);
         // Auto-select the new store
         setSelectedStore(newStore);
+        return newStore;
+      } else {
+        // If store creation failed but didn't throw an error
+        console.error('Store creation returned null');
+        setError('Failed to create store - server returned no data');
+        return null;
       }
-      return newStore;
-    } catch (err) {
-      setError('Failed to create store');
-      console.error('Failed to create store:', err);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Failed to create store';
+      setError(errorMsg);
+      console.error('Store creation error:', err);
       return null;
     } finally {
       setLoading(false);

@@ -15,8 +15,7 @@ const CheckoutForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [orderComplete, setOrderComplete] = useState<boolean>(false);
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
   // Form state
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
@@ -29,16 +28,14 @@ const CheckoutForm: React.FC = () => {
     phone: ''
   });
 
-  const [billingAddress, setBillingAddress] = useState<BillingAddress>({
-    fullName: '',
-    streetAddress: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: ''
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
+  const [cardDetails, setCardDetails] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    cardholderName: ''
   });
 
-  const [sameAsShipping, setSameAsShipping] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
 
   // Shipping cost and tax calculation
@@ -46,124 +43,44 @@ const CheckoutForm: React.FC = () => {
   const tax = totalPrice * 0.08; // 8% tax
   const orderTotal = totalPrice + shippingCost + tax;
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://my.click.uz/pay/checkout.js';
-    script.async = true;
-    document.head.appendChild(script);
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
-
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentStep(1);
-    if (sameAsShipping) {
-      setBillingAddress({
-        fullName: shippingAddress.fullName,
-        streetAddress: shippingAddress.streetAddress,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        postalCode: shippingAddress.postalCode,
-        country: shippingAddress.country
-      });
-    }
   };
 
-  const handleConfirmationSubmit = async (e: React.FormEvent) => {
+  const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create the order
-    const order = await createOrder(
-      shippingAddress.fullName,
-      email,
-      cart,
-      shippingAddress,
-      billingAddress,
-      'credit-card', // Assuming a default payment method
-      orderTotal
-    );
-
-    if (order) {
-      setOrderId(order.id);
-      setOrderComplete(true);
-      clearCart();
-    } else {
-      // Handle the case where the order creation failed
-      console.error("Order creation failed");
-    }
+    setCurrentStep(2);
   };
 
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
+  const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsProcessingPayment(true);
-    setPaymentError(null);
+    setIsProcessingOrder(true);
 
     try {
-      // Create order first
+      // Create order with selected payment method
       const order = await createOrder(
         shippingAddress.fullName,
         email,
+        shippingAddress.phone,
         cart,
         shippingAddress,
-        billingAddress,
-        'click',
+        null,
+        paymentMethod, // 'card' or 'cash'
         orderTotal
       );
 
-      if (!order) {
+      if (order) {
+        setOrderId(order.id);
+        setOrderComplete(true);
+        clearCart();
+      } else {
         throw new Error('Failed to create order');
       }
-
-      // Initialize Click payment
-      const paymentParams: ClickPaymentParams = {
-        merchantId: import.meta.env.VITE_CLICK_MERCHANT_ID,
-        serviceId: import.meta.env.VITE_CLICK_SERVICE_ID,
-        amount: orderTotal,
-        transactionId: order.id,
-        merchantUserId: email,
-        returnUrl: `${window.location.origin}/checkout/complete`
-      };
-
-      const result = await initializeClickPayment(paymentParams);
-
-      if (result.status === 'error') {
-        throw new Error(result.error || 'Payment failed');
-      }
-
-      // Payment successful - update order and redirect
-      setOrderId(order.id);
-      setOrderComplete(true);
-      clearCart();
     } catch (error) {
-      setPaymentError(error instanceof Error ? error.message : 'Payment processing failed');
-      setCurrentStep(1); // Stay on payment step
+      console.error('Error creating order:', error);
     } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const handleSameAsShippingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSameAsShipping(e.target.checked);
-    if (e.target.checked) {
-      setBillingAddress({
-        fullName: shippingAddress.fullName,
-        streetAddress: shippingAddress.streetAddress,
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        postalCode: shippingAddress.postalCode,
-        country: shippingAddress.country
-      });
-    } else {
-      setBillingAddress({
-        fullName: '',
-        streetAddress: '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: ''
-      });
+      setIsProcessingOrder(false);
     }
   };
 
@@ -377,84 +294,180 @@ const CheckoutForm: React.FC = () => {
         {/* Step 2: Payment */}
         {currentStep === 1 && (
           <form onSubmit={handlePaymentSubmit}>
-            <h2 className="text-lg font-medium text-gray-900 mb-6">Оплата</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-6">Способ оплаты</h2>
             
-            <div className="mb-6">
-              <div className="bg-primary/5 rounded-lg p-4 mb-4">
-                <h3 className="font-medium text-gray-900 mb-2">Сумма к оплате</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Подытог</span>
-                    <span className="text-gray-900">${totalPrice.toFixed(2)}</span>
+            {/* Payment Method Selection */}
+            <div className="space-y-4 mb-6">
+              <div 
+                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                  paymentMethod === 'card' ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentMethod('card')}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      checked={paymentMethod === 'card'}
+                      onChange={() => setPaymentMethod('card')}
+                      className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                    />
+                    <div className="ml-3">
+                      <p className="font-medium text-gray-900">Банковская карта</p>
+                      <p className="text-sm text-gray-500">Оплата картой онлайн</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Доставка</span>
-                    {shippingCost === 0 ? (
-                      <span className="text-green-600">Бесплатно</span>
-                    ) : (
-                      <span className="text-gray-900">${shippingCost.toFixed(2)}</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Налог</span>
-                    <span className="text-gray-900">${tax.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-gray-200 pt-2 flex justify-between">
-                    <span className="font-medium text-gray-900">Итого</span>
-                    <span className="font-bold text-primary">${orderTotal.toFixed(2)}</span>
+                  <div className="flex space-x-2">
+                    <img src="/visa-logo.png" alt="Visa" className="h-6 w-auto" />
+                    <img src="/mastercard-logo.png" alt="Mastercard" className="h-6 w-auto" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <img src="/click-logo.png" alt="Click" className="h-8 w-auto mr-2" />
+              <div 
+                className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                  paymentMethod === 'cash' ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => setPaymentMethod('cash')}
+              >
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === 'cash'}
+                    onChange={() => setPaymentMethod('cash')}
+                    className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                  />
+                  <div className="ml-3">
+                    <p className="font-medium text-gray-900">Оплата при получении</p>
+                    <p className="text-sm text-gray-500">Наличными или картой курьеру</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Details Form */}
+            {paymentMethod === 'card' && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 className="font-medium text-gray-900 mb-4">Данные карты</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                      Номер карты
+                    </label>
+                    <input
+                      type="text"
+                      id="cardNumber"
+                      placeholder="1234 5678 9012 3456"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={cardDetails.cardNumber}
+                      onChange={(e) => {
+                        // Format card number with spaces
+                        const value = e.target.value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
+                        setCardDetails({...cardDetails, cardNumber: value});
+                      }}
+                      maxLength={19}
+                      required={paymentMethod === 'card'}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="font-medium text-gray-900">Click</p>
-                      <p className="text-sm text-gray-500">Безопасная оплата через Click</p>
+                      <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
+                        Срок действия
+                      </label>
+                      <input
+                        type="text"
+                        id="expiryDate"
+                        placeholder="MM/YY"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        value={cardDetails.expiryDate}
+                        onChange={(e) => {
+                          // Format expiry date
+                          const value = e.target.value.replace(/\D/g, '').replace(/(.{2})/, '$1/');
+                          setCardDetails({...cardDetails, expiryDate: value});
+                        }}
+                        maxLength={5}
+                        required={paymentMethod === 'card'}
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="cvv" className="block text-sm font-medium text-gray-700 mb-1">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        id="cvv"
+                        placeholder="123"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                        value={cardDetails.cvv}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '');
+                          setCardDetails({...cardDetails, cvv: value});
+                        }}
+                        maxLength={4}
+                        required={paymentMethod === 'card'}
+                      />
                     </div>
                   </div>
-                  <div className="flex-shrink-0">
+                  
+                  <div>
+                    <label htmlFor="cardholderName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Имя владельца карты
+                    </label>
                     <input
-                      type="radio"
-                      name="payment-method"
-                      checked
-                      readOnly
-                      className="h-4 w-4 text-primary border-gray-300 focus:ring-primary"
+                      type="text"
+                      id="cardholderName"
+                      placeholder="IVAN PETROV"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={cardDetails.cardholderName}
+                      onChange={(e) => setCardDetails({...cardDetails, cardholderName: e.target.value.toUpperCase()})}
+                      required={paymentMethod === 'card'}
                     />
                   </div>
                 </div>
               </div>
+            )}
 
-              {paymentError && (
-                <div className="bg-red-50 text-red-700 p-4 rounded-md mb-4">
-                  {paymentError}
+            {/* Order Summary */}
+            <div className="bg-primary/5 rounded-lg p-4 mb-6">
+              <h3 className="font-medium text-gray-900 mb-3">Сумма к оплате</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Подытог</span>
+                  <span className="text-gray-900">${totalPrice.toFixed(2)}</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Доставка</span>
+                  {shippingCost === 0 ? (
+                    <span className="text-green-600">Бесплатно</span>
+                  ) : (
+                    <span className="text-gray-900">${shippingCost.toFixed(2)}</span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Налог</span>
+                  <span className="text-gray-900">${tax.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-2 flex justify-between">
+                  <span className="font-medium text-gray-900">Итого</span>
+                  <span className="font-bold text-primary">${orderTotal.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-between">
               <button
                 type="button"
-                className="border border-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-50 transition-colors"
                 onClick={() => setCurrentStep(0)}
+                className="border border-gray-300 text-gray-700 py-2 px-6 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Назад
               </button>
               <button
                 type="submit"
-                className="bg-primary text-white py-2 px-6 rounded-md hover:bg-primary-dark transition-colors flex items-center"
-                disabled={isProcessingPayment}
+                className="bg-primary text-white py-2 px-6 rounded-md hover:bg-primary-dark transition-colors"
               >
-                {isProcessingPayment ? (
-                  <>
-                    <span className="mr-2">Обработка...</span>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  </>
-                ) : (
-                  'Оплатить'
-                )}
+                Продолжить к подтверждению
               </button>
             </div>
           </form>
