@@ -5,12 +5,55 @@ import { getAllProducts, Product } from '../services/api/products';
 import { useCart } from '../context/CartContext';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import { Link } from 'react-router-dom';
+import { 
+  oldMoneyAestheticImages, 
+  fashionImages, 
+  lifestyleImages,
+  frenchHairSecrets,
+  momSummerWardrobe,
+  oldMoneyMensOutfits,
+  professionalBlend,
+  luxuriousPolo,
+  understatedOpulence,
+  premiumSweater,
+  timelessElegance,
+  quietLuxury,
+  engagementRing,
+  bookLovers,
+  loafers,
+  sweater,
+  product1,
+  product2,
+  product3,
+  product4,
+  product5,
+  productStyle
+} from '../assets/images';
 
-// Old Money Aesthetic Image Collection (flat array!)
+// Your curated old money aesthetic collection using your uploaded images
 export const oldMoneyImages = [
+  // Import your uploaded images
+  frenchHairSecrets,
+  momSummerWardrobe,
+  oldMoneyMensOutfits,
+  professionalBlend,
+  luxuriousPolo,
+  understatedOpulence,
+  premiumSweater,
+  timelessElegance,
+  quietLuxury,
+  engagementRing,
+  bookLovers,
+  loafers,
+  sweater,
+  product1,
+  product2,
+  product3,
+  product4,
+  product5,
+  productStyle,
   
-  
-  
+  // Keep some Unsplash images to fill out the gallery
   'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&h=700&fit=crop&crop=entropy',
   'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&h=650&fit=crop&crop=entropy',
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&h=700&fit=crop&crop=entropy',
@@ -20,49 +63,7 @@ export const oldMoneyImages = [
   'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=500&h=700&fit=crop&crop=entropy',
   'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&h=650&fit=crop&crop=entropy',
   'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&h=750&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=500&h=600&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&h=800&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=500&h=650&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=750&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=500&h=650&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&h=800&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&h=750&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=500&h=650&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=500&h=800&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=500&h=600&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=500&h=650&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?w=500&h=700&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500&h=650&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=500&h=750&fit=crop&crop=entropy',
-  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&h=600&fit=crop&crop=entropy',
-  
-    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1454023492550-5696f8ff10e1?w=500&h=650&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1482062364825-616fd23b8fc1?w=500&h=800&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1524253482453-3fed8d2fe12b?w=500&h=750&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=500&h=650&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&h=800&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1454023492550-5696f8ff10e1?w=500&h=750&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=500&h=600&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&h=650&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=500&h=800&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1465101178521-c1a9136a3e8a?w=500&h=700&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1464983953574-0892a716854b?w=500&h=750&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=500&h=600&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=500&h=800&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=500&h=750&fit=crop&crop=entropy',
-    'https://images.unsplash.com/photo-1465101178521-c1a9136a3e8a?w=500&h=650&fit=crop&crop=entropy',
-  
-  'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500&h=800&fit=crop&crop=entropy'
+  'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=500&h=700&fit=crop&crop=entropy'
 ];
 
 const GalleryPage: React.FC = () => {
