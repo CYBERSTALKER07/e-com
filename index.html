@@ -173,6 +173,30 @@
         }
       }
       
+      /* Mobile Animation Disable for Safari/iOS */
+      @media (max-width: 768px), (hover: none) and (pointer: coarse), (prefers-reduced-motion: reduce) {
+        /* Disable all animations and transitions on mobile */
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+          transform: none !important;
+        }
+        
+        /* Disable specific webkit animations */
+        .network-status {
+          transition: none !important;
+          -webkit-transition: none !important;
+        }
+        
+        /* Reset any transforms that might interfere */
+        .network-status.offline {
+          transform: translateY(0) !important;
+          -webkit-transform: translateY(0) !important;
+        }
+      }
+      
       /* Fix for Safari button appearance */
       button, input[type="submit"], input[type="button"] {
         -webkit-appearance: none;
