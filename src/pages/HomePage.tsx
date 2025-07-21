@@ -32,6 +32,7 @@ import Layout from '../components/Layout/Layout';
 import { getAllProducts, Product } from '../services/api/products';
 import { useCart } from '../context/CartContext';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
+import { isMobileDevice, prefersReducedMotion } from '../lib/animations';
 
 // Register GSAP plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -253,6 +254,11 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (isLoading) return;
 
+    // Skip all animations on mobile devices or when user prefers reduced motion
+    if (isMobileDevice() || prefersReducedMotion()) {
+      return;
+    }
+
     const ctx = gsap.context(() => {
       // Hero entrance animation with enhanced timing
       const heroContent = heroRef.current?.querySelector('.hero-content');
@@ -331,7 +337,7 @@ const HomePage: React.FC = () => {
           },
         });
 
-        // Enhanced hover effects
+        // Enhanced hover effects - only on non-mobile
         categoryCards.forEach(card => {
           if (card instanceof HTMLElement) {
             card.addEventListener('mouseenter', () => {
@@ -423,34 +429,9 @@ const HomePage: React.FC = () => {
           scrollTrigger: {
             trigger: awardsRef.current,
             start: 'top 80%',
+            end: 'bottom 20%',
             toggleActions: 'play reverse play reverse',
           },
-        });
-      }
-
-      // Social Proof with counter animation
-      const countersElements = socialProofRef.current?.querySelectorAll('.counter-number');
-      if (countersElements && countersElements.length > 0) {
-        const counterValues = [15000, 5000, 98, 25];
-        
-        Array.from(countersElements).forEach((counter, index) => {
-          if (counter instanceof HTMLElement) {
-            const counterObj = { value: 0 };
-            gsap.to(counterObj, {
-              value: counterValues[index],
-              duration: 2,
-              ease: 'power2.out',
-              scrollTrigger: {
-                trigger: socialProofRef.current,
-                start: 'top 70%',
-                toggleActions: 'play none none reverse',
-              },
-              onUpdate: function() {
-                const value = Math.round(counterObj.value);
-                counter.textContent = value.toLocaleString() + (index === 2 ? '%' : '+');
-              }
-            });
-          }
         });
       }
 
@@ -522,73 +503,49 @@ const HomePage: React.FC = () => {
       }
 
       // New Arrivals with wave effect
-      const newArrivalCards = productsRef.current?.querySelectorAll('.new-arrival-card');
-      if (newArrivalCards && newArrivalCards.length > 0) {
-        gsap.fromTo(Array.from(newArrivalCards), {
-          opacity: 0,
-          x: -100,
-          rotation: -15,
-        }, {
-          opacity: 1,
-          x: 0,
-          rotation: 0,
-          duration: 1,
-          ease: 'elastic.out(1, 0.5)',
-          stagger: {
-            amount: 0.8,
-            from: 'start',
-            ease: 'power2.inOut'
-          },
+      const newArrivals = newArrivalsRef.current?.querySelectorAll('.arrival-card');
+      if (newArrivals && newArrivals.length > 0) {
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: productsRef.current?.querySelector('.new-arrivals-section'),
-            start: 'top 70%',
-            end: 'bottom 30%',
+            trigger: newArrivalsRef.current,
+            start: 'top 80%',
+            end: 'bottom 20%',
             toggleActions: 'play reverse play reverse',
-            scrub: 1,
-          },
+            scrub: 0.5,
+          }
+        });
+
+        Array.from(newArrivals).forEach((card, index) => {
+          tl.fromTo(card, {
+            opacity: 0,
+            x: index % 2 === 0 ? -100 : 100,
+            rotation: index % 2 === 0 ? -10 : 10,
+          }, {
+            opacity: 1,
+            x: 0,
+            rotation: 0,
+            duration: 1,
+            ease: 'power2.out',
+          }, index * 0.1);
         });
       }
 
-      // Testimonials with slide effect
+      // Testimonials with spin-in effect
       const testimonialCards = testimonialsRef.current?.querySelectorAll('.testimonial-card');
       if (testimonialCards && testimonialCards.length > 0) {
         gsap.fromTo(Array.from(testimonialCards), {
           opacity: 0,
-          x: 200,
-          rotationX: 30,
-        }, {
-          opacity: 1,
-          x: 0,
-          rotationX: 0,
-          duration: 1.2,
-          ease: 'power3.out',
-          stagger: 0.2,
-          scrollTrigger: {
-            trigger: testimonialsRef.current,
-            start: 'top 80%',
-            end: 'bottom 20%',
-            toggleActions: 'play reverse play reverse',
-            scrub: 0.8,
-          },
-        });
-      }
-
-      // Community Stats with magnetic attraction
-      const communityStats = communityRef.current?.querySelectorAll('.community-stat');
-      if (communityStats && communityStats.length > 0) {
-        gsap.fromTo(Array.from(communityStats), {
-          opacity: 0,
-          scale: 0,
           rotation: 180,
+          scale: 0.3,
         }, {
           opacity: 1,
-          scale: 1,
           rotation: 0,
+          scale: 1,
           duration: 1.5,
           ease: 'elastic.out(1, 0.3)',
           stagger: 0.2,
           scrollTrigger: {
-            trigger: communityRef.current,
+            trigger: testimonialsRef.current,
             start: 'top 70%',
             end: 'bottom 30%',
             toggleActions: 'play reverse play reverse',

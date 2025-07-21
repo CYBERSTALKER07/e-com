@@ -2,6 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile Animation Disable - Place at the top for priority */
+@media (max-width: 768px), (hover: none) and (pointer: coarse), (prefers-reduced-motion: reduce) {
+  /* Disable all animations and transitions on mobile */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+  
+  /* Disable specific animation classes */
+  .animate-bounce,
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-bounce-slow {
+    animation: none !important;
+  }
+  
+  /* Disable hover effects on mobile */
+  .hover\:scale-105:hover,
+  .hover\:scale-110:hover,
+  .group-hover\:scale-105,
+  .group-hover\:scale-110 {
+    transform: none !important;
+  }
+  
+  /* Disable GSAP and Framer Motion animations */
+  .gsap-animated,
+  .framer-motion-animated {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  /* Reset any floating or parallax effects */
+  .floating-element,
+  .floating-image-0,
+  .floating-image-1,
+  .floating-image-2 {
+    transform: none !important;
+    animation: none !important;
+  }
+}
+
 /* iOS PWA Optimizations */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top, 0px);

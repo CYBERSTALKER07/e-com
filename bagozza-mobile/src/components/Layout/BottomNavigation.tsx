@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { BottomTabParamList } from '../../types/navigation';
 import Icon from 'react-native-vector-icons/Feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,10 @@ import StoreManagementPage from '../../pages/StoreManagementPage';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
+// Detect mobile device and disable animations
+const isMobileDevice = () => true;
+const shouldDisableAnimations = () => isMobileDevice();
+
 // Custom tab bar component for the center button effect
 const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
@@ -25,19 +29,24 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
   const primaryColor = '#6B4423'; // Brown color
   const accentColor = '#FCEDD9'; // Light beige accent color
 
-  // Animation values for tab buttons (focus state)
+  // Animation values for tab buttons (focus state) - disabled on mobile
   const tabAnimations = useRef(state.routes.map(() => new Animated.Value(0))).current;
-  // Press-and-hold animations for each tab (scale effect)
+  // Press-and-hold animations for each tab (scale effect) - disabled on mobile
   const pressAnimations = useRef(state.routes.map(() => new Animated.Value(1))).current;
 
-  // Handlers for press-in and press-out on Cart
+  // Handlers for press-in and press-out - disabled on mobile
   const handlePressIn = (index: number) => {
+    if (shouldDisableAnimations()) return;
+    
     // Apply press scale to any non-focused tab
     if (state.index !== index) {
       Animated.spring(pressAnimations[index], { toValue: 1.2, useNativeDriver: true }).start();
     }
   };
+  
   const handlePressOut = (index: number) => {
+    if (shouldDisableAnimations()) return;
+    
     // Reset press scale for non-focused tabs
     if (state.index !== index) {
       Animated.spring(pressAnimations[index], { toValue: 1, useNativeDriver: true }).start();
@@ -45,6 +54,15 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
   };
 
   useEffect(() => {
+    if (shouldDisableAnimations()) {
+      // Set all animations to final state immediately
+      state.routes.forEach((route, index) => {
+        tabAnimations[index].setValue(index === state.index ? 1 : 0);
+        pressAnimations[index].setValue(1);
+      });
+      return;
+    }
+
     // Animate the focused tab
     Animated.parallel(
       state.routes.map((route, index) => {
@@ -68,44 +86,42 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
         
         const isFocused = state.index === index;
         
-        // Animation values
-        const scale = tabAnimations[index].interpolate({
+        // Animation values - static on mobile
+        const scale = shouldDisableAnimations() ? 1 : tabAnimations[index].interpolate({
           inputRange: [0, 1],
-          outputRange: [0.9, 1.1],
+          outputRange: [1, 1.1],
         });
 
-        // Only treat Cart as center button when it is active
-        const isCenter = index === 2 && isFocused;
+        // Get icon name
+        let iconName = 'home';
+        let displayLabel = label;
         
-        // This will be the icon name based on route
-        let iconName: string;
         switch (route.name) {
           case 'Home':
             iconName = 'home';
+            displayLabel = 'Главная';
             break;
           case 'Products':
             iconName = 'shopping-bag';
+            displayLabel = 'Товары';
             break;
           case 'Cart':
             iconName = 'shopping-cart';
+            displayLabel = 'Корзина';
             break;
           case 'Orders':
-            iconName = 'clock';
+            iconName = 'package';
+            displayLabel = 'Заказы';
             break;
           case 'Store':
-            iconName = 'store';
+            iconName = 'briefcase';
+            displayLabel = 'Магазин';
             break;
           case 'Account':
             iconName = 'user';
+            displayLabel = 'Аккаунт';
             break;
-          default:
-            iconName = 'circle';
         }
-        
-        // Special label for Cart to show "Корзина" instead of "Избранное"
-        const displayLabel = route.name === 'Cart' 
-          ? 'Корзина' 
-          : typeof label === 'string' ? label : 'Главная';
 
         const onPress = () => {
           const event = navigation.emit({
@@ -115,32 +131,38 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
           });
 
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+            navigation.navigate(route.name, route.params);
           }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
         };
 
         return (
           <TouchableOpacity
-            key={index}
+            key={route.key}
+            style={styles.tabButton}
             accessibilityRole="button"
             accessibilityState={isFocused ? { selected: true } : {}}
             accessibilityLabel={options.tabBarAccessibilityLabel}
+            testID={options.tabBarTestID}
             onPress={onPress}
+            onLongPress={onLongPress}
             onPressIn={() => handlePressIn(index)}
             onPressOut={() => handlePressOut(index)}
-            style={[
-              styles.tabButton,
-              isCenter && styles.centerTabButton
-            ]}
+            activeOpacity={0.7}
           >
-            {isCenter ? (
-              <View style={styles.centerButtonContainer}>
-                <Animated.View 
-                  style={[
-                    styles.centerIconContainer,
-                    { transform: [{ scale }, { scale: pressAnimations[index] }] }
-                  ]}
-                >
+            {/* Special handling for center button (if applicable) */}
+            {route.name === 'Store' ? (
+              <View style={styles.centerButton}>
+                <Animated.View style={[
+                  styles.centerButtonInner,
+                  shouldDisableAnimations() ? {} : { transform: [{ scale }] }
+                ]}>
                   <Icon name={iconName} size={24} color="white" />
                 </Animated.View>
                 <Text style={styles.centerButtonLabel}>{displayLabel}</Text>
@@ -149,7 +171,12 @@ const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation })
               <Animated.View 
                 style={[
                   styles.tabContent, 
-                  { transform: [{ scale }, { scale: pressAnimations[index] }] }
+                  shouldDisableAnimations() ? {} : { 
+                    transform: [
+                      { scale }, 
+                      { scale: pressAnimations[index] }
+                    ] 
+                  }
                 ]}
               >
                 <View style={[
@@ -291,7 +318,31 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: 'bold',
-  }
+  },
+  centerButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    top: -20,
+    left: '50%',
+    transform: [{ translateX: -50% }],
+  },
+  centerButtonInner: {
+    backgroundColor: '#e07832',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
 });
 
 export default BottomNavigation;

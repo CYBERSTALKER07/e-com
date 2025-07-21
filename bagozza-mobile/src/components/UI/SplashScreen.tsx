@@ -8,6 +8,9 @@ interface SplashScreenProps {
 
 const { width, height } = Dimensions.get('window');
 
+// Detect mobile device (always true in React Native)
+const isMobileDevice = () => true;
+
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 3000 }) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -17,6 +20,20 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 3000 }
   const lineWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Skip animations - show immediately and call onFinish
+    if (isMobileDevice()) {
+      // Set all values to final state immediately
+      titleOpacity.setValue(1);
+      titleScale.setValue(1);
+      subtitleOpacity.setValue(1);
+      subtitleY.setValue(0);
+      lineWidth.setValue(200);
+      
+      // Call onFinish after a short delay for UX
+      const timer = setTimeout(onFinish, 1000);
+      return () => clearTimeout(timer);
+    }
+
     const sequence = Animated.sequence([
       // Title animation
       Animated.parallel([
@@ -69,7 +86,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 3000 }
     return () => {
       sequence.stop();
     };
-  }, []);
+  }, [onFinish]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
@@ -99,6 +116,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 3000 }
           <Text style={styles.subtitle}>TIMELESS • SOPHISTICATED • EFFORTLESS</Text>
         </Animated.View>
         
+        {/* Bottom line */}
         <View style={styles.bottomLine} />
       </View>
     </Animated.View>
