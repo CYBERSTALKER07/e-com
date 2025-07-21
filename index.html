@@ -2,12 +2,221 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Primary Meta Tags -->
     <title>Buyursin - Магазин мужской одежды</title>
+    <meta name="title" content="Buyursin - Магазин мужской одежды">
+    <meta name="description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#6B4423">
+    <meta name="msapplication-navbutton-color" content="#6B4423">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Buyursin">
+    
+    <!-- Microsoft PWA Meta Tags -->
+    <meta name="msapplication-TileImage" content="/mstile-150x150.png">
+    <meta name="msapplication-TileColor" content="#6B4423">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://buyursin.com/">
+    <meta property="og:title" content="Buyursin - Магазин мужской одежды">
+    <meta property="og:description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
+    <meta property="og:image" content="/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Buyursin">
+    
+    <!-- Twitter Meta Tags -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://buyursin.com/">
+    <meta property="twitter:title" content="Buyursin - Магазин мужской одежды">
+    <meta property="twitter:description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
+    <meta property="twitter:image" content="/og-image.png">
+    
+    <!-- Additional PWA Features -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Buyursin">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- DNS Prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://api.buyursin.com">
+    <link rel="dns-prefetch" href="https://cdn.buyursin.com">
+    
+    <!-- Splash Screen Styles for iOS -->
+    <style>
+      /* PWA Splash Screen */
+      .pwa-splash {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #6B4423 0%, #8B5A2B 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      
+      .splash-content {
+        text-align: center;
+        animation: fadeInUp 0.6s ease-out;
+      }
+      
+      .splash-logo {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+      }
+      
+      .splash-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 2rem;
+      }
+      
+      .splash-loader {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* Network Status Indicator */
+      .network-status {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #ef4444;
+        color: white;
+        text-align: center;
+        padding: 8px;
+        font-size: 14px;
+        z-index: 10001;
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+      }
+      
+      .network-status.offline {
+        transform: translateY(0);
+      }
+      
+      .network-status.online {
+        background: #10b981;
+      }
+    </style>
   </head>
   <body>
+    <!-- Network Status Indicator -->
+    <div id="network-status" class="network-status">
+      <span id="network-message">You are currently offline</span>
+    </div>
+    
+    <!-- PWA Splash Screen -->
+    <div id="pwa-splash" class="pwa-splash">
+      <div class="splash-content">
+        <div class="splash-logo">Buyursin</div>
+        <div class="splash-subtitle">Магазин мужской одежды</div>
+        <div class="splash-loader"></div>
+      </div>
+    </div>
+    
     <div id="root"></div>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      // Network status management
+      function updateNetworkStatus() {
+        const statusEl = document.getElementById('network-status');
+        const messageEl = document.getElementById('network-message');
+        
+        if (navigator.onLine) {
+          statusEl.className = 'network-status online';
+          messageEl.textContent = 'Вы в сети! Синхронизация данных...';
+          setTimeout(() => {
+            statusEl.className = 'network-status';
+          }, 3000);
+        } else {
+          statusEl.className = 'network-status offline';
+          messageEl.textContent = 'Вы в данный момент оффлайн';
+        }
+      }
+      
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
+      
+      // Hide splash screen when app loads
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const splash = document.getElementById('pwa-splash');
+          if (splash) {
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => splash.remove(), 300);
+          }
+        }, 1000);
+      });
+      
+      // PWA Installation Detection
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('[PWA] SW registered: ', registration);
+            })
+            .catch(registrationError => {
+              console.log('[PWA] SW registration failed: ', registrationError);
+            });
+        });
+      }
+      
+      // Add to home screen prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        console.log('[PWA] Install prompt ready');
+      });
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

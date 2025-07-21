@@ -8,6 +8,7 @@ import { OrderProvider } from './context/OrderContext';
 import { AuthProvider } from './context/AuthContext';
 import { StoreProvider } from './context/StoreContext';
 import SplashScreen from './components/UI/SplashScreen';
+import { pwaService } from './services/pwa';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -31,6 +32,7 @@ import GalleryPage from './pages/GalleryPage';
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isAppReady, setIsAppReady] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     AOS.init({
@@ -38,6 +40,53 @@ function App() {
       once: true,
       easing: 'ease-out-cubic'
     });
+
+    // Initialize PWA service
+    console.log('[App] PWA service initialized');
+
+    // Listen for network status changes
+    const handleNetworkStatusChange = (event: CustomEvent) => {
+      setIsOnline(event.detail.online);
+      
+      if (event.detail.online) {
+        // Show success toast when back online
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #10b981;
+          color: white;
+          padding: 12px 16px;
+          border-radius: 8px;
+          z-index: 10000;
+          animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = '🌐 Back online! Data synced.';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+    };
+
+    window.addEventListener('networkstatuschange', handleNetworkStatusChange as EventListener);
+
+    // Listen for cart sync events from PWA service
+    const handleCartSync = (event: CustomEvent) => {
+      console.log('[App] Cart sync event received:', event.detail);
+    };
+
+    const handleOrderSync = (event: CustomEvent) => {
+      console.log('[App] Order sync event received:', event.detail);
+    };
+
+    window.addEventListener('cartsync', handleCartSync as EventListener);
+    window.addEventListener('ordersync', handleOrderSync as EventListener);
+
+    return () => {
+      window.removeEventListener('networkstatuschange', handleNetworkStatusChange as EventListener);
+      window.removeEventListener('cartsync', handleCartSync as EventListener);
+      window.removeEventListener('ordersync', handleOrderSync as EventListener);
+    };
   }, []);
 
   const handleSplashFinish = () => {
@@ -55,7 +104,16 @@ function App() {
         <StoreProvider>
           <CartProvider>
             <OrderProvider>
-              <Toaster position="top-center" />
+              <Toaster 
+                position="top-center"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: isOnline ? '#10b981' : '#ef4444',
+                    color: 'white',
+                  },
+                }}
+              />
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/products" element={<ProductsPage />} />
