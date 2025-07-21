@@ -10,6 +10,46 @@ import { StoreProvider } from './context/StoreContext';
 import SplashScreen from './components/UI/SplashScreen';
 import { pwaService } from './services/pwa';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
+            <p className="text-gray-600 mb-4">Please refresh the page to try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Pages
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
@@ -35,14 +75,23 @@ function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out-cubic'
-    });
+    // Initialize AOS with error handling
+    try {
+      AOS.init({
+        duration: 1000,
+        once: true,
+        easing: 'ease-out-cubic'
+      });
+    } catch (error) {
+      console.error('Error initializing AOS:', error);
+    }
 
-    // Initialize PWA service
-    console.log('[App] PWA service initialized');
+    // Initialize PWA service with error handling
+    try {
+      console.log('[App] PWA service initialized');
+    } catch (error) {
+      console.error('Error initializing PWA service:', error);
+    }
 
     // Listen for network status changes
     const handleNetworkStatusChange = (event: CustomEvent) => {
@@ -89,55 +138,69 @@ function App() {
     };
   }, []);
 
-  const handleSplashFinish = () => {
-    setShowSplash(false);
-    setIsAppReady(true);
-  };
+  const handleSplashFinish = React.useCallback(() => {
+    try {
+      setShowSplash(false);
+      setIsAppReady(true);
+    } catch (error) {
+      console.error('Error in handleSplashFinish:', error);
+      // Fallback: hide splash anyway
+      setShowSplash(false);
+      setIsAppReady(true);
+    }
+  }, []);
 
+  // Render splash screen with error boundary
   if (showSplash) {
-    return <SplashScreen onFinish={handleSplashFinish} duration={3000} />;
+    return (
+      <ErrorBoundary>
+        <SplashScreen onFinish={handleSplashFinish} duration={3000} />
+      </ErrorBoundary>
+    );
   }
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <StoreProvider>
-          <CartProvider>
-            <OrderProvider>
-              <Toaster 
-                position="top-center"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: isOnline ? '#10b981' : '#ef4444',
-                    color: 'white',
-                  },
-                }}
-              />
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/products/:id" element={<ProductDetailPage />} />
-                <Route path="/gallery" element={<GalleryPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/order-complete" element={<OrderCompletePage />} />
-                <Route path="/orders" element={<OrdersPage />} />
-                <Route path="/orders/:id" element={<OrderDetailPage />} />
-                <Route path="/admin" element={<AdminDashboardPage />} />
-                <Route path="/admin/analytics" element={<StoreAnalyticsDashboard />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/stores" element={<StorePage />} />
-                <Route path="/upgrade-plan" element={<UpgradePlanPage />} />
-              </Routes>
-            </OrderProvider>
-          </CartProvider>
-        </StoreProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <StoreProvider>
+            <CartProvider>
+              <OrderProvider>
+                <Toaster 
+                  position="top-center"
+                  toastOptions={{
+                    duration: 4000,
+                    style: {
+                      background: isOnline ? '#10b981' : '#ef4444',
+                      color: 'white',
+                    },
+                  }}
+                />
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/products/:id" element={<ProductDetailPage />} />
+                  <Route path="/gallery" element={<GalleryPage />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/order-complete" element={<OrderCompletePage />} />
+                  <Route path="/orders" element={<OrdersPage />} />
+                  <Route path="/orders/:id" element={<OrderDetailPage />} />
+                  <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin/analytics" element={<StoreAnalyticsDashboard />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/stores" element={<StorePage />} />
+                  <Route path="/upgrade-plan" element={<UpgradePlanPage />} />
+                </Routes>
+              </OrderProvider>
+            </CartProvider>
+          </StoreProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

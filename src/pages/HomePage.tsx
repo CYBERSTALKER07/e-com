@@ -682,15 +682,16 @@ const HomePage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
           
           {/* Left Column - Enhanced Content */}
-          <div className="hero-content order-2 lg:order-1 text-center lg:text-left space-y-8">
-            {/* Enhanced Badge */}
-            {/* <div className="hero-badge inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 border border-indigo-200/50 text-indigo-700 text-sm font-semibold shadow-lg backdrop-blur-sm">
-              <Zap className="h-4 w-4 mr-2 animate-pulse" />
-              <span>New Collection 2025 • Limited Edition</span>
-            </div> */}
+          <div className="hero-content order-2 lg:order-1 text-center lg:text-left space-y-6 lg:space-y-8">
+            {/* Enhanced Badge - Mobile Friendly */}
+            <div className="hero-badge inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 border border-indigo-200/50 text-indigo-700 text-xs sm:text-sm font-semibold shadow-lg backdrop-blur-sm">
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-pulse" />
+              <span className="hidden sm:inline">New Collection 2025 • Limited Edition</span>
+              <span className="sm:hidden">New Collection 2025</span>
+            </div>
 
             {/* Enhanced Main Title */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-extrabold leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-extrabold leading-tight">
               <span className="block bg-gradient-to-r from-gray-900 via-indigo-900 to-purple-900 bg-clip-text text-transparent">
                 Discover Your
               </span>
@@ -700,59 +701,60 @@ const HomePage: React.FC = () => {
             </h1>
 
             {/* Enhanced Subtitle */}
-            <p className="hero-subtitle text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl font-light">
+            <p className="hero-subtitle text-lg sm:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl font-light">
               Experience fashion redefined. Curated collections from world-renowned designers, 
               delivered with <span className="font-semibold text-indigo-600">premium service</span> and 
               <span className="font-semibold text-purple-600"> unmatched quality</span>.
             </p>
 
-            {/* Enhanced Features List */}
-            {/* <div className="hero-features flex flex-wrap justify-center lg:justify-start gap-8">
+            {/* Enhanced Features List - Mobile Responsive */}
+            <div className="hero-features flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 lg:gap-8">
               {heroFeatures.map((feature, index) => (
-                <div key={index} className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-white/20">
-                  <feature.icon className={`h-5 w-5 ${feature.color}`} />
-                  <span className="text-sm font-medium text-gray-700">{feature.text}</span>
+                <div key={index} className="flex items-center space-x-2 sm:space-x-3 bg-white/60 backdrop-blur-sm rounded-full px-3 sm:px-4 py-2 shadow-lg border border-white/20">
+                  <feature.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${feature.color}`} />
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">{feature.text}</span>
                 </div>
               ))}
-            </div> */}
+            </div>
 
-            {/* Enhanced CTA Buttons */}
-            {/* <div className="hero-buttons flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            {/* Enhanced CTA Buttons - Mobile First */}
+            <div className="hero-buttons flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
               <Link
                 to="/products"
-                className="group relative inline-flex items-center px-10 py-5 text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl overflow-hidden transition-all duration-500 transform hover:scale-105 shadow-2xl hover:shadow-indigo-500/25"
+                className="group relative inline-flex items-center justify-center px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-semibold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl overflow-hidden transition-all duration-500 transform hover:scale-105 shadow-2xl hover:shadow-indigo-500/25 w-full sm:w-auto"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
                 <span className="relative flex items-center">
                   Shop Collection
-                  <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ArrowRight className="ml-2 sm:ml-3 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </span>
               </Link>
               
               <Link
                 to="/gallery"
-                className="group inline-flex items-center px-10 py-5 text-lg font-semibold text-gray-700 bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl hover:border-indigo-300 hover:text-indigo-700 hover:bg-white transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
+                className="group inline-flex items-center justify-center px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-semibold text-gray-700 bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl hover:border-indigo-300 hover:text-indigo-700 hover:bg-white transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl w-full sm:w-auto"
               >
-                <Play className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-300" />
-                Watch Our Story
+                <Play className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 group-hover:scale-110 transition-transform duration-300" />
+                <span className="hidden sm:inline">Watch Our Story</span>
+                <span className="sm:hidden">Our Story</span>
               </Link>
-            </div> */}
+            </div>
 
-            {/* Enhanced Stats */}
-            {/* <div className="hero-stats flex justify-center lg:justify-start space-x-12 pt-4">
+            {/* Enhanced Stats - Mobile Grid */}
+            <div className="hero-stats grid grid-cols-3 gap-4 sm:flex sm:justify-center lg:justify-start sm:space-x-12 pt-4">
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">50K+</div>
-                <div className="text-sm font-medium text-gray-600">Happy Customers</div>
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">50K+</div>
+                <div className="text-xs sm:text-sm font-medium text-gray-600">Happy Customers</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">5K+</div>
-                <div className="text-sm font-medium text-gray-600">Premium Products</div>
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">5K+</div>
+                <div className="text-xs sm:text-sm font-medium text-gray-600">Premium Products</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-indigo-600 bg-clip-text text-transparent">98%</div>
-                <div className="text-sm font-medium text-gray-600">Satisfaction Rate</div>
+                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-600 to-indigo-600 bg-clip-text text-transparent">98%</div>
+                <div className="text-xs sm:text-sm font-medium text-gray-600">Satisfaction Rate</div>
               </div>
-            </div> */}
+            </div>
           </div>
 
           {/* Right Column - Floating Images */}
@@ -846,18 +848,18 @@ const HomePage: React.FC = () => {
       {heroSection}
 
       {/* Enhanced Categories Section */}
-      <section ref={categoriesRef} className="py-24 bg-gradient-to-b from-blue-50 to-white">
+      <section ref={categoriesRef} className="py-16 sm:py-24 bg-gradient-to-b from-blue-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-gray-900 to-indigo-900 bg-clip-text text-transparent">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6 bg-gradient-to-r from-gray-900 to-indigo-900 bg-clip-text text-transparent">
               Shop by Category
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Explore our carefully curated collections designed for the modern fashion enthusiast
             </p>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {categories.map((category, index) => (
               <div key={category.name} className="category-card group relative cursor-pointer">
                 <div className="relative rounded-3xl overflow-hidden shadow-xl bg-white">
@@ -871,12 +873,12 @@ const HomePage: React.FC = () => {
                     <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60`}></div>
                   </div>
                   
-                  <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
-                    <h3 className="text-2xl font-bold mb-2">{category.name}</h3>
-                    <p className="text-white/90 text-sm mb-2">{category.description}</p>
+                  <div className="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 text-white">
+                    <h3 className="text-lg sm:text-2xl font-bold mb-2">{category.name}</h3>
+                    <p className="text-white/90 text-xs sm:text-sm mb-2">{category.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-white/80 text-sm">{category.count}</span>
-                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                      <span className="text-white/80 text-xs sm:text-sm">{category.count}</span>
+                      <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
 
@@ -885,11 +887,72 @@ const HomePage: React.FC = () => {
                 </div>
 
                 {/* Category badge */}
-                <div className={`absolute top-4 left-4 rounded-full px-3 py-1 text-xs font-semibold text-white ${category.badgeColor}`}>
+                <div className={`absolute top-3 sm:top-4 left-3 sm:left-4 rounded-full px-2 sm:px-3 py-1 text-xs font-semibold text-white ${category.badgeColor}`}>
                   {category.badge}
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products Section */}
+      <section ref={productsRef} className="py-16 sm:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">Featured Products</h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover our handpicked selection of premium fashion items
+            </p>
+          </div>
+
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+              {featuredProducts.slice(0, 8).map((product, index) => (
+                <div key={product.id} className="product-card group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                  <div className="relative aspect-[3/4] overflow-hidden">
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      loading="lazy"
+                    />
+                    <div className="absolute top-3 right-3">
+                      <button className="w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
+                        <Heart className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4 sm:p-6">
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg sm:text-xl font-bold text-primary">${product.price}</span>
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium"
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-12">
+            <Link
+              to="/products"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold"
+            >
+              View All Products
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
           </div>
         </div>
       </section>

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -33,45 +33,79 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Initialize state with React.useState to ensure proper React context
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleAuthStateChange = useCallback(async (event: string, session: Session | null) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+    
+    // Clear user data on sign out
+    if (event === 'SIGNED_OUT') {
+      setProfile(null);
+      setIsAdmin(false);
+    }
+  }, []);
+
+  // Initialize auth state
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    let mounted = true;
+    
+    // Get initial session with error handling
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        // Clear user data on sign out
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setIsAdmin(false);
+        if (error) {
+          console.warn('Error getting initial session:', error);
+        }
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes with error handling
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (mounted) {
+          handleAuthStateChange(event, session);
         }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [handleAuthStateChange]);
 
   // Fetch user profile when user changes
   useEffect(() => {
+    let mounted = true;
+    
     const fetchProfile = async () => {
       if (!user) {
-        setProfile(null);
-        setIsAdmin(false);
-        setIsLoading(false);
+        if (mounted) {
+          setProfile(null);
+          setIsAdmin(false);
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -79,62 +113,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Create a basic profile from user metadata
         const basicProfile: UserProfile = {
           id: user.id,
-          full_name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
           email: user.email || '',
-          role: user.user_metadata.role || 'user',
+          role: user.user_metadata?.role || 'user',
           avatar_url: null,
           phone: null,
-          plan: user.user_metadata.plan || 'free',
-          max_stores: user.user_metadata.max_stores || 1
+          plan: user.user_metadata?.plan || 'free',
+          max_stores: user.user_metadata?.max_stores || 1
         };
         
         // Set admin status based on metadata
-        const isAdminUser = user.user_metadata.role === 'admin';
-        setIsAdmin(isAdminUser);
-        setProfile(basicProfile);
+        const isAdminUser = user.user_metadata?.role === 'admin';
+        
+        if (mounted) {
+          setIsAdmin(isAdminUser);
+          setProfile(basicProfile);
+        }
 
         try {
           // Fetch profile from backend API
           const apiProfile = await fetchUserProfile();
-          setProfile(apiProfile);
-          setIsAdmin(apiProfile.role === 'admin');
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          if (mounted) {
+            setProfile(apiProfile);
+            setIsAdmin(apiProfile.role === 'admin');
+          }
         } catch (error) {
           console.warn('Could not fetch profile from API, using basic profile:', error);
           // Fall back to Supabase direct query if API fails
-          const { data, error: supabaseError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
+          try {
+            const { data, error: supabaseError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single();
 
-          if (!supabaseError && data) {
-            const userProfile: UserProfile = {
-              id: data.id,
-              full_name: data.full_name,
-              email: user.email || '',
-              role: data.role,
-              avatar_url: data.avatar_url,
-              phone: data.phone,
-              plan: data.plan || 'free',
-              max_stores: data.max_stores || 1
-            };
-            
-            setProfile(userProfile);
-            setIsAdmin(data.role === 'admin');
+            if (!supabaseError && data && mounted) {
+              const userProfile: UserProfile = {
+                id: data.id,
+                full_name: data.full_name,
+                email: user.email || '',
+                role: data.role,
+                avatar_url: data.avatar_url,
+                phone: data.phone,
+                plan: data.plan || 'free',
+                max_stores: data.max_stores || 1
+              };
+              
+              setProfile(userProfile);
+              setIsAdmin(data.role === 'admin');
+            }
+          } catch (dbError) {
+            console.warn('Could not fetch profile from database:', dbError);
           }
         }
       } catch (error) {
         console.error('Error in profile fetch process:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchProfile();
+
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
-  const signUp = async (email: string, password: string, fullName: string, role: string = 'user') => {
+  // Memoize auth functions
+  const signUp = useCallback(async (email: string, password: string, fullName: string, role: string = 'user') => {
     try {
       // First, check if the user already exists
       const { data: existingUser } = await supabase
@@ -193,9 +242,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('An unexpected error occurred during sign up.');
       return { error: error as AuthError };
     }
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -214,9 +263,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('An unexpected error occurred during sign in.');
       return { error: error as AuthError };
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
       toast.success('Signed out successfully');
@@ -224,9 +273,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error during sign out:', error);
       toast.error('An error occurred during sign out');
     }
-  };
+  }, []);
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -244,9 +293,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('An unexpected error occurred');
       return { error: error as AuthError };
     }
-  };
+  }, []);
 
-  const updatePassword = async (password: string) => {
+  const updatePassword = useCallback(async (password: string) => {
     try {
       const { error } = await supabase.auth.updateUser({
         password,
@@ -264,9 +313,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('An unexpected error occurred');
       return { error: error as AuthError };
     }
-  };
+  }, []);
 
-  const updateProfile = async (data: Partial<UserProfile>) => {
+  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
     try {
       if (!user) {
         throw new Error('User not authenticated');
@@ -331,23 +380,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error('Error updating profile');
       return { error: error as Error };
     }
-  };
+  }, [user, profile]);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = React.useMemo(() => ({
+    session,
+    user,
+    profile,
+    isLoading,
+    isAuthenticated: !!user,
+    isAdmin,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    updateProfile,
+  }), [
+    session,
+    user,
+    profile,
+    isLoading,
+    isAdmin,
+    signUp,
+    signIn,
+    signOut,
+    resetPassword,
+    updatePassword,
+    updateProfile,
+  ]);
 
   return (
-    <AuthContext.Provider value={{
-      session,
-      user,
-      profile,
-      isLoading,
-      isAuthenticated: !!user,
-      isAdmin,
-      signUp,
-      signIn,
-      signOut,
-      resetPassword,
-      updatePassword,
-      updateProfile,
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
