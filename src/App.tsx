@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AOS from 'aos';
@@ -7,6 +7,7 @@ import { CartProvider } from './context/CartContext';
 import { OrderProvider } from './context/OrderContext';
 import { AuthProvider } from './context/AuthContext';
 import { StoreProvider } from './context/StoreContext';
+import SplashScreen from './components/UI/SplashScreen';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -18,6 +19,7 @@ import OrderCompletePage from './pages/PaymentCompletePage'; // Renamed from Pay
 import OrdersPage from './pages/Orders/OrdersPage';
 import OrderDetailPage from './pages/Orders/OrderDetailPage';
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage';
+import StoreAnalyticsDashboard from './pages/Admin/StoreAnalyticsDashboard';
 import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import ForgotPasswordPage from './pages/Auth/ForgotPasswordPage';
@@ -27,6 +29,9 @@ import UpgradePlanPage from './pages/UpgradePlanPage';
 import GalleryPage from './pages/GalleryPage';
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [isAppReady, setIsAppReady] = useState(false);
+
   useEffect(() => {
     AOS.init({
       duration: 1000,
@@ -34,6 +39,15 @@ function App() {
       easing: 'ease-out-cubic'
     });
   }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+    setIsAppReady(true);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onFinish={handleSplashFinish} duration={3000} />;
+  }
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
@@ -53,6 +67,7 @@ function App() {
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="/orders/:id" element={<OrderDetailPage />} />
                 <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/analytics" element={<StoreAnalyticsDashboard />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />

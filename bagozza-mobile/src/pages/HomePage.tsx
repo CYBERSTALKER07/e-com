@@ -38,7 +38,7 @@ const HomePage = () => {
           imageStyle={{ opacity: 0.85 }}
         >
           <View style={styles.heroOverlay}>
-            <Text style={styles.heroTitle}>Bagozza</Text>
+            <Text style={styles.heroTitle}>Buyursin</Text>
             <Text style={styles.heroSubtitle}>
               Эксклюзивные сумки ручной работы
             </Text>
@@ -158,7 +158,7 @@ const HomePage = () => {
         <View style={styles.aboutSection}>
           <Text style={styles.aboutTitle}>О нас</Text>
           <Text style={styles.aboutText}>
-            Bagozza - бренд эксклюзивных сумок ручной работы. Мы создаем уникальные изделия, 
+            Buyursin - бренд эксклюзивных сумок ручной работы. Мы создаем уникальные изделия, 
             сочетающие в себе качество, стиль и индивидуальность. Каждое изделие изготавливается 
             из премиальных материалов с особым вниманием к деталям.
           </Text>
@@ -190,7 +190,7 @@ const HomePage = () => {
                 // If you have an AboutPage component:
                 // navigation.navigate('About' as never);
                 // If not, you could show an alert or modal:
-                alert('О компании Bagozza: Мы создаем эксклюзивные сумки с 2020 года, сочетая традиции и инновации.');
+                alert('О компании Buyursin: Мы создаем эксклюзивные сумки с 2020 года, сочетая традиции и инновации.');
               } catch (error) {
                 console.error('Navigation error:', error);
                 alert('Произошла ошибка. Попробуйте позже.');

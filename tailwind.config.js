@@ -6,18 +6,26 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',  // Extra small devices
+        'sm': '640px',  // Small devices
+        'md': '768px',  // Medium devices
+        'lg': '1024px', // Large devices
+        'xl': '1280px', // Extra large devices
+        '2xl': '1536px', // 2X large devices
+      },
       colors: {
         primary: {
-          DEFAULT: '#6B4423',
-          dark: '#523319',
-          light: '#8B633F'
+          DEFAULT: '#8B5CF6', // Purple
+          dark: '#7C3AED',    // Darker purple
+          light: '#A78BFA'    // Lighter purple
         },
         secondary: {
-          DEFAULT: '#D4A373',
-          dark: '#BC8A5F',
-          light: '#E2B992'
+          DEFAULT: '#000000', // Black
+          dark: '#111827',    // Very dark gray (almost black)
+          light: '#374151'    // Dark gray
         },
-        accent: '#FAFAF9',
+        accent: '#FFFFFF', // White
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',

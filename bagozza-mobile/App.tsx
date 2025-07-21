@@ -28,6 +28,9 @@ import RegisterPage from './src/pages/Auth/RegisterPage';
 import AdminPage from './src/pages/Admin/AdminPage';
 import PaymentCompletePage from './src/pages/PaymentCompletePage';
 
+// Import BLENIN splash screen
+import BleninSplashScreen from './src/components/UI/SplashScreen';
+
 // Prevent splash screen from auto-hiding until app is ready
 SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +51,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function App() {
   // Manage splash visibility
   const [appIsReady, setAppIsReady] = useState(false);
+  const [showBleninSplash, setShowBleninSplash] = useState(true);
 
   useEffect(() => {
     async function prepare() {
@@ -63,13 +67,21 @@ export default function App() {
   }, []);
 
   const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
+    if (appIsReady && !showBleninSplash) {
       await SplashScreen.hideAsync();
     }
-  }, [appIsReady]);
+  }, [appIsReady, showBleninSplash]);
+
+  const handleBleninSplashFinish = () => {
+    setShowBleninSplash(false);
+  };
 
   if (!appIsReady) {
     return null;
+  }
+
+  if (showBleninSplash) {
+    return <BleninSplashScreen onFinish={handleBleninSplashFinish} duration={3000} />;
   }
 
   return (

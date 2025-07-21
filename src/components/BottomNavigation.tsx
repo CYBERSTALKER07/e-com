@@ -1,11 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Heart, Clock, Grid } from 'lucide-react';
+import { Home, ShoppingBag, Heart, Clock, Grid, BarChart3 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../hooks/useAuth';
+import { useStore } from '../context/StoreContext';
 
 const BottomNavigation: React.FC = () => {
   const location = useLocation();
   const { totalItems } = useCart();
+  const { isAuthenticated, isAdmin } = useAuth();
+  const { stores } = useStore();
+  
+  // Check if user is a store owner (has at least one store)
+  const isStoreOwner = stores && stores.length > 0;
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -53,13 +60,24 @@ const BottomNavigation: React.FC = () => {
           <span className="text-xs mt-1">Favorites</span>
         </Link>
         
-        <Link 
-          to="/orders" 
-          className={`flex flex-col items-center justify-center w-full h-full ${isActive('/orders') ? 'text-primary' : 'text-gray-500'}`}
-        >
-          <Clock className="h-6 w-6" />
-          <span className="text-xs mt-1">Orders</span>
-        </Link>
+        {/* Show analytics for admins and store owners */}
+        {(isAdmin || isStoreOwner) ? (
+          <Link 
+            to="/admin/analytics" 
+            className={`flex flex-col items-center justify-center w-full h-full ${isActive('/admin/analytics') ? 'text-primary' : 'text-gray-500'}`}
+          >
+            <BarChart3 className="h-6 w-6" />
+            <span className="text-xs mt-1">Analytics</span>
+          </Link>
+        ) : (
+          <Link 
+            to="/orders" 
+            className={`flex flex-col items-center justify-center w-full h-full ${isActive('/orders') ? 'text-primary' : 'text-gray-500'}`}
+          >
+            <Clock className="h-6 w-6" />
+            <span className="text-xs mt-1">Orders</span>
+          </Link>
+        )}
       </div>
     </div>
   );

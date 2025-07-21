@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { Appbar, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -12,7 +12,7 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ 
-  title = 'Bagozza', 
+  title = 'Buyursin', 
   showBackButton = false,
   showCart = true
 }) => {
@@ -22,19 +22,11 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <SafeAreaView style={{ backgroundColor: theme.colors.primary }}>
       <Appbar.Header style={styles.header}>
-        {showBackButton ? (
+        {showBackButton && (
           <Appbar.BackAction 
             color="white" 
             onPress={() => navigation.goBack()} 
           />
-        ) : (
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../../assets/icon.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
         )}
         
         <Text style={styles.title}>{title}</Text>
@@ -64,16 +56,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#6B4423', // Brown color from web version
     elevation: 0,
     shadowOpacity: 0,
-  },
-  logoContainer: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 30,
-    height: 30,
   },
   title: {
     color: 'white',

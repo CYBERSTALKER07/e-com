@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom utilities for larger, more prominent product cards */
+@layer utilities {
+  .products-grid {
+    display: grid !important;
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+  }
+  
+  @media (min-width: 640px) {
+    .products-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 1.5rem !important;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .products-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 2rem !important;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .products-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 2rem !important;
+    }
+  }
+  
+  @media (min-width: 1536px) {
+    .products-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 2rem !important;
+    }
+  }
+}
+
+/* Ensure proper grid item sizing for larger cards */
+.product-grid-item {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 400px !important;
+}
+
+/* Override any potential conflicts */
+.products-grid > * {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ensure cards maintain consistent height */
+.products-grid .product-grid-item > * {
+  height: 100% !important;
+}

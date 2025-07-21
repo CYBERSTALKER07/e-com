@@ -1,13 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Heart, Clock, Settings, User, Grid } from 'lucide-react';
+import { Home, ShoppingBag, Heart, Clock, Settings, User, Grid, ShoppingCart, BarChart3 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../context/CartContext';
+import { useStore } from '../../context/StoreContext';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated, isAdmin } = useAuth();
   const { totalItems } = useCart();
+  const { stores } = useStore();
+
+  // Check if user is a store owner (has at least one store)
+  const isStoreOwner = stores && stores.length > 0;
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -70,6 +75,19 @@ const Sidebar: React.FC = () => {
             title="Заказы"
           >
             <Clock className="h-6 w-6" />
+          </Link>
+        )}
+
+        {/* Analytics link for admins and store owners */}
+        {(isAdmin || isStoreOwner) && (
+          <Link 
+            to="/admin/analytics" 
+            className={`flex items-center justify-center h-[70px] ${
+              isActive('/admin/analytics') ? 'text-primary' : 'text-gray-700 hover:text-primary'
+            }`}
+            title="Аналитика"
+          >
+            <BarChart3 className="h-6 w-6" />
           </Link>
         )}
 

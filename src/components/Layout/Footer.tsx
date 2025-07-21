@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
           <div>
             <div className="flex items-center mb-4">
               <Package className="h-8 w-8 text-primary-light" />
-              <span className="ml-2 text-xl font-bold">Bagozza</span>
+              <span className="ml-2 text-xl font-bold">Buyursin</span>
             </div>
             <p className="text-gray-400 mb-4">
               Лучший магазин мужской одежды и аксессуаров в Ташкенте.

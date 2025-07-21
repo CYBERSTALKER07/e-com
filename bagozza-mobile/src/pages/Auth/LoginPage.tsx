@@ -87,7 +87,7 @@ const LoginPage = () => {
                 style={styles.logo}
                 resizeMode="contain"
               />
-              <Text style={styles.logoText}>Bagozza</Text>
+              <Text style={styles.logoText}>Buyursin</Text>
             </View>
             
             <Text style={styles.subtitle}>Войдите в свою учетную запись</Text>

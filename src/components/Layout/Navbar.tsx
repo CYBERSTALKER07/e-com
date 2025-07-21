@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Search, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, LogOut, BarChart3 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../hooks/useAuth';
+import { useStore } from '../../context/StoreContext';
 
 const Navbar: React.FC = () => {
   const { totalItems } = useCart();
   const { isAuthenticated, isAdmin, signOut, profile } = useAuth();
+  const { stores } = useStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+
+  // Check if user is a store owner (has at least one store)
+  const isStoreOwner = stores && stores.length > 0;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +36,7 @@ const Navbar: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <Package className="h-8 w-8 text-primary" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Bagozza</span>
+              <span className="text-xl font-bold text-gray-900">Buyursin</span>
             </Link>
           </div>
 
@@ -63,6 +67,14 @@ const Navbar: React.FC = () => {
             {isAdmin && (
               <Link to="/admin" className="text-gray-700 hover:text-primary px-3 py-2 rounded-md font-medium">
                 Админ
+              </Link>
+            )}
+
+            {/* Analytics link for admins and store owners */}
+            {(isAdmin || isStoreOwner) && (
+              <Link to="/admin/analytics" className="text-gray-700 hover:text-primary px-3 py-2 rounded-md font-medium flex items-center">
+                <BarChart3 className="h-4 w-4 mr-1" />
+                Аналитика
               </Link>
             )}
 
@@ -171,6 +183,18 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Админ
+              </Link>
+            )}
+
+            {/* Analytics link for mobile menu */}
+            {(isAdmin || isStoreOwner) && (
+              <Link 
+                to="/admin/analytics" 
+                className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <BarChart3 className="h-5 w-5 mr-2" />
+                Аналитика
               </Link>
             )}
 
