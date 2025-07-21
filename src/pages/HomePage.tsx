@@ -166,7 +166,7 @@ const testimonials = [
     id: 1,
     name: 'Sarah Johnson',
     role: 'Fashion Blogger',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b77c?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
     content: 'Absolutely love the quality and unique designs. Every purchase has exceeded my expectations!',
     rating: 5
   },
@@ -174,7 +174,7 @@ const testimonials = [
     id: 2,
     name: 'Michael Chen',
     role: 'Business Executive',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
     content: 'Professional service and premium products. The perfect blend of style and functionality.',
     rating: 5
   },
@@ -182,7 +182,7 @@ const testimonials = [
     id: 3,
     name: 'Emma Williams',
     role: 'Interior Designer',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80',
     content: 'The attention to detail is remarkable. Each piece tells a story of craftsmanship.',
     rating: 5
   }
@@ -1177,207 +1177,6 @@ const HomePage: React.FC = () => {
                 Subscribe
               </button>
             </form>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section ref={featuresRef} className="py-24 bg-gradient-to-b from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose Us</h2>
-            <p className="text-xl text-gray-600">Experience shopping excellence with our premium services</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="feature-card bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-gradient-to-br from-primary/20 to-purple-200/30 p-4 rounded-full w-fit mb-6 mx-auto">
-                <ShoppingBag className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-center">Premium Selection</h3>
-              <p className="text-gray-600 text-center">Curated collection of high-quality fashion items.</p>
-            </div>
-            <div className="feature-card bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-gradient-to-br from-primary/20 to-purple-200/30 p-4 rounded-full w-fit mb-6 mx-auto">
-                <Truck className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-center">Fast Delivery</h3>
-              <p className="text-gray-600 text-center">Quick and reliable shipping to your doorstep.</p>
-            </div>
-            <div className="feature-card bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-gradient-to-br from-primary/20 to-purple-200/30 p-4 rounded-full w-fit mb-6 mx-auto">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-center">Secure Shopping</h3>
-              <p className="text-gray-600 text-center">Safe and protected online shopping experience.</p>
-            </div>
-            <div className="feature-card bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-gradient-to-br from-primary/20 to-purple-200/30 p-4 rounded-full w-fit mb-6 mx-auto">
-                <CreditCard className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-center">Easy Payment</h3>
-              <p className="text-gray-600 text-center">Multiple secure payment options available.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Enhanced Featured Products Section */}
-      <section ref={productsRef} className="py-24 bg-gradient-to-b from-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gray-900 mb-6 bg-gradient-to-r from-gray-900 to-primary bg-clip-text text-transparent">
-              Featured Products
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover our handpicked selection of premium products from top-rated stores
-            </p>
-          </div>
-
-          {isLoading ? (
-            <div className="flex justify-center">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <>
-              {/* Featured Products Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-                {featuredProducts.map((product) => (
-                  <div 
-                    key={product.id} 
-                    className="product-card group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-4 hover:rotate-1"
-                  >
-                    <div className="relative overflow-hidden aspect-w-4 aspect-h-5">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      
-                      {/* Product Badge */}
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-gradient-to-r from-primary to-purple-600 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-                          Featured
-                        </span>
-                      </div>
-
-                      {/* Quick Actions */}
-                      <div className="absolute top-4 right-4 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
-                        <button 
-                          title="Add to favorites"
-                          className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white shadow-lg transition-all duration-300"
-                        >
-                          <Heart className="h-5 w-5 text-gray-600 hover:text-red-500" />
-                        </button>
-                        <button 
-                          title="Add to cart"
-                          onClick={() => handleAddToCart(product)}
-                          className="p-2 bg-primary text-white rounded-full hover:bg-primary-dark shadow-lg transition-all duration-300"
-                        >
-                          <ShoppingCart className="h-5 w-5" />
-                        </button>
-                      </div>
-
-                      {/* Product Info Overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                        <Link to={`/products/${product.id}`}>
-                          <h3 className="text-white font-semibold text-lg mb-2">{product.name}</h3>
-                          <p className="text-white/90 text-sm mb-3 line-clamp-2">{product.description}</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-white font-bold text-xl">${product.price}</span>
-                            <span className="text-white/80 text-sm">In Stock: {product.stock_quantity}</span>
-                          </div>
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Product Details */}
-                    <div className="p-6">
-                      <Link to={`/products/${product.id}`} className="block mb-3">
-                        <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition-colors line-clamp-1">
-                          {product.name}
-                        </h3>
-                      </Link>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{product.description}</p>
-                      
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-2xl font-bold text-primary">${product.price}</span>
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-current text-yellow-400" />
-                          ))}
-                          <span className="text-gray-500 text-sm ml-1">(4.8)</span>
-                        </div>
-                      </div>
-
-                      <button 
-                        onClick={() => handleAddToCart(product)}
-                        className="w-full bg-gradient-to-r from-primary to-purple-600 text-white py-3 rounded-xl hover:from-primary-dark hover:to-purple-700 transition-all duration-300 font-medium transform hover:scale-105"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* New Arrivals Section */}
-              <div className="new-arrivals-section border-t border-gray-200 pt-16">
-                <div className="text-center mb-12">
-                  <h3 className="text-4xl font-bold text-gray-900 mb-4">New Arrivals</h3>
-                  <p className="text-lg text-gray-600">Fresh additions to our collection</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                  {newArrivals.map((product) => (
-                    <div 
-                      key={product.id}
-                      className="new-arrival-card group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-500 transform hover:-translate-y-2"
-                    >
-                      <div className="relative">
-                        <img 
-                          src={product.image} 
-                          alt={product.name}
-                          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-lg">
-                            New
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <Link to={`/products/${product.id}`}>
-                          <h4 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
-                            {product.name}
-                          </h4>
-                        </Link>
-                        <p className="text-primary font-bold mt-2">${product.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* View More Buttons */}
-          <div className="text-center space-y-4">
-            <Link
-              to="/products"
-              className="inline-flex items-center px-10 py-4 text-lg font-medium text-white bg-gradient-to-r from-primary to-purple-600 rounded-full hover:from-primary-dark hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105"
-            >
-              View All Products
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <div className="block">
-              <Link
-                to="/gallery"
-                className="inline-flex items-center px-6 py-3 text-base font-medium text-primary border-2 border-primary rounded-full hover:bg-primary hover:text-white transition-all duration-300 transform hover:scale-105"
-              >
-                Browse Gallery
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </div>
           </div>
         </div>
       </section>

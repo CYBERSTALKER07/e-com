@@ -2,6 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS PWA Optimizations */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --vh: 1vh;
+}
+
+/* iOS Viewport Fix */
+html, body {
+  height: 100%;
+  height: calc(var(--vh, 1vh) * 100);
+  overflow-x: hidden;
+}
+
+/* iOS Safe Area Support */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
+/* iOS Standalone App Optimizations */
+@media (display-mode: standalone) {
+  /* Remove default scrollbar on iOS */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Prevent bounce scrolling */
+  body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* iOS status bar spacing */
+  .status-bar-safe {
+    padding-top: var(--safe-area-inset-top);
+  }
+}
+
+/* iOS Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Better touch targets for iOS */
+  button, .btn, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Remove iOS tap highlighting */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  /* iOS-specific input styling */
+  input, textarea, select {
+    -webkit-appearance: none;
+    border-radius: 8px;
+  }
+}
+
+/* iOS Keyboard Handling */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Adjust layout when iOS keyboard is visible */
+  .ios-keyboard-adjust {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+
 /* Custom utilities for larger, more prominent product cards */
 @layer utilities {
   .products-grid {

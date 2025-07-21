@@ -7,39 +7,53 @@
     <title>Buyursin - Магазин мужской одежды</title>
     <meta name="title" content="Buyursin - Магазин мужской одежды">
     <meta name="description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <!-- Safari compatible viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     
     <!-- Theme Color -->
     <meta name="theme-color" content="#6B4423">
+    <!-- Safari-specific theme color -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#6B4423">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#6B4423">
     <meta name="msapplication-navbutton-color" content="#6B4423">
+    
+    <!-- iOS Safari PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Buyursin">
+    <!-- Safari 15+ compatible status bar style -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-touch-fullscreen" content="yes">
     
-    <!-- Apple Touch Icon -->
+    <!-- iOS App Icons - Using generated PNG icons -->
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
     
-    <!-- Favicon -->
+    <!-- Favicon - Using generated PNG icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="shortcut icon" href="/favicon.ico">
     
-    <!-- Apple PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Buyursin">
-    
     <!-- Microsoft PWA Meta Tags -->
-    <meta name="msapplication-TileImage" content="/mstile-150x150.png">
+    <meta name="msapplication-TileImage" content="/pwa-192x192.png">
     <meta name="msapplication-TileColor" content="#6B4423">
-    <meta name="msapplication-config" content="/browserconfig.xml">
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://buyursin.com/">
     <meta property="og:title" content="Buyursin - Магазин мужской одежды">
     <meta property="og:description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
-    <meta property="og:image" content="/og-image.png">
+    <meta property="og:image" content="https://buyursin.com/pwa-512x512.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="Buyursin">
@@ -49,12 +63,16 @@
     <meta property="twitter:url" content="https://buyursin.com/">
     <meta property="twitter:title" content="Buyursin - Магазин мужской одежды">
     <meta property="twitter:description" content="Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.">
-    <meta property="twitter:image" content="/og-image.png">
+    <meta property="twitter:image" content="https://buyursin.com/pwa-512x512.png">
     
     <!-- Additional PWA Features -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Buyursin">
     <meta name="format-detection" content="telephone=no">
+    
+    <!-- Safari-specific optimizations -->
+    <meta name="apple-mobile-web-app-oriented" content="portrait">
+    <link rel="mask-icon" href="/pwa-192x192.svg" color="#6B4423">
     
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,65 +82,42 @@
     <link rel="dns-prefetch" href="https://api.buyursin.com">
     <link rel="dns-prefetch" href="https://cdn.buyursin.com">
     
-    <!-- Splash Screen Styles for iOS -->
+    <!-- Safari-compatible styles -->
     <style>
-      /* PWA Splash Screen */
-      .pwa-splash {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #6B4423 0%, #8B5A2B 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      /* CSS Custom Properties for Safari compatibility */
+      :root {
+        --safe-area-inset-top: 0px;
+        --safe-area-inset-right: 0px;
+        --safe-area-inset-bottom: 0px;
+        --safe-area-inset-left: 0px;
+        --vh: 1vh;
       }
       
-      .splash-content {
-        text-align: center;
-        animation: fadeInUp 0.6s ease-out;
+      /* Safari 11+ Safe Area Support */
+      @supports (padding: max(0px)) {
+        :root {
+          --safe-area-inset-top: env(safe-area-inset-top, 0px);
+          --safe-area-inset-right: env(safe-area-inset-right, 0px);
+          --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+          --safe-area-inset-left: env(safe-area-inset-left, 0px);
+        }
       }
       
-      .splash-logo {
-        font-size: 3rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
+      /* Fix for Safari viewport height issues */
+      html {
+        height: -webkit-fill-available;
       }
       
-      .splash-subtitle {
-        font-size: 1.2rem;
-        opacity: 0.9;
-        margin-bottom: 2rem;
-      }
-      
-      .splash-loader {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(255, 255, 255, 0.3);
-        border-top: 3px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto;
-      }
-      
-      @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+      body {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+        min-height: calc(var(--vh, 1vh) * 100);
       }
       
       /* Network Status Indicator */
       .network-status {
         position: fixed;
-        top: 0;
+        top: var(--safe-area-inset-top);
         left: 0;
         right: 0;
         background: #ef4444;
@@ -133,14 +128,55 @@
         z-index: 10001;
         transform: translateY(-100%);
         transition: transform 0.3s ease;
+        /* Safari-specific smoothing */
+        -webkit-transform: translateY(-100%);
+        -webkit-transition: -webkit-transform 0.3s ease;
       }
       
       .network-status.offline {
         transform: translateY(0);
+        -webkit-transform: translateY(0);
       }
       
       .network-status.online {
         background: #10b981;
+      }
+      
+      /* iOS/Safari Standalone App Adjustments */
+      @media (display-mode: standalone) {
+        body {
+          padding-top: var(--safe-area-inset-top);
+          padding-bottom: var(--safe-area-inset-bottom);
+          padding-left: var(--safe-area-inset-left);
+          padding-right: var(--safe-area-inset-right);
+        }
+        
+        /* Hide scrollbars in standalone mode */
+        ::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Prevent bounce scrolling on iOS */
+        body {
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: none;
+          -webkit-overscroll-behavior: none;
+        }
+      }
+      
+      /* Safari-specific fixes */
+      @media screen and (-webkit-min-device-pixel-ratio: 2) {
+        /* Retina display optimizations */
+        * {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+      }
+      
+      /* Fix for Safari button appearance */
+      button, input[type="submit"], input[type="button"] {
+        -webkit-appearance: none;
+        appearance: none;
       }
     </style>
   </head>
@@ -150,28 +186,34 @@
       <span id="network-message">You are currently offline</span>
     </div>
     
-    <!-- PWA Splash Screen -->
-    <div id="pwa-splash" class="pwa-splash">
-      <div class="splash-content">
-        <div class="splash-logo">Buyursin</div>
-        <div class="splash-subtitle">Магазин мужской одежды</div>
-        <div class="splash-loader"></div>
-      </div>
-    </div>
-    
     <div id="root"></div>
     
-    <!-- PWA Service Worker Registration -->
+    <!-- Safari-compatible PWA Service Worker Registration -->
     <script>
-      // Network status management
+      // Safari viewport height fix
+      function setSafeViewportHeight() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      }
+      
+      // Initial set and on resize/orientation change
+      setSafeViewportHeight();
+      window.addEventListener('resize', setSafeViewportHeight);
+      window.addEventListener('orientationchange', function() {
+        setTimeout(setSafeViewportHeight, 100);
+      });
+      
+      // Network status management with Safari compatibility
       function updateNetworkStatus() {
         const statusEl = document.getElementById('network-status');
         const messageEl = document.getElementById('network-message');
         
+        if (!statusEl || !messageEl) return;
+        
         if (navigator.onLine) {
           statusEl.className = 'network-status online';
           messageEl.textContent = 'Вы в сети! Синхронизация данных...';
-          setTimeout(() => {
+          setTimeout(function() {
             statusEl.className = 'network-status';
           }, 3000);
         } else {
@@ -180,40 +222,71 @@
         }
       }
       
-      window.addEventListener('online', updateNetworkStatus);
-      window.addEventListener('offline', updateNetworkStatus);
+      // Safari-compatible event listeners
+      if (window.addEventListener) {
+        window.addEventListener('online', updateNetworkStatus, false);
+        window.addEventListener('offline', updateNetworkStatus, false);
+      } else {
+        // Fallback for older browsers
+        window.attachEvent('ononline', updateNetworkStatus);
+        window.attachEvent('onoffline', updateNetworkStatus);
+      }
       
-      // Hide splash screen when app loads
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const splash = document.getElementById('pwa-splash');
-          if (splash) {
-            splash.style.opacity = '0';
-            splash.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => splash.remove(), 300);
-          }
-        }, 1000);
-      });
-      
-      // PWA Installation Detection
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
+      // Safari-compatible PWA Installation Detection
+      if ('serviceWorker' in navigator && navigator.serviceWorker.register) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(registration) {
               console.log('[PWA] SW registered: ', registration);
+              
+              // Safari-specific handling
+              if (registration.waiting) {
+                console.log('[PWA] SW waiting');
+              }
+              
+              if (registration.installing) {
+                console.log('[PWA] SW installing');
+              }
+              
+              if (registration.active) {
+                console.log('[PWA] SW active');
+              }
             })
-            .catch(registrationError => {
+            .catch(function(registrationError) {
               console.log('[PWA] SW registration failed: ', registrationError);
             });
         });
       }
       
-      // Add to home screen prompt
-      let deferredPrompt;
-      window.addEventListener('beforeinstallprompt', (e) => {
+      // Safari-compatible install prompt handling
+      var deferredPrompt;
+      
+      // Handle beforeinstallprompt (not supported in Safari, but good for other browsers)
+      window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
         deferredPrompt = e;
         console.log('[PWA] Install prompt ready');
+      });
+      
+      // Safari-specific iOS detection and handling
+      function isIOSDevice() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      }
+      
+      function isInStandaloneMode() {
+        return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true;
+      }
+      
+      // Show iOS install instructions if needed
+      if (isIOSDevice() && !isInStandaloneMode()) {
+        console.log('[PWA] iOS device detected, not in standalone mode');
+        // iOS install prompt will be handled by the PWA service
+      }
+      
+      // Handle app installed event
+      window.addEventListener('appinstalled', function(evt) {
+        console.log('[PWA] App was installed');
       });
     </script>
     

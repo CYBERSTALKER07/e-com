@@ -1,14 +1,14 @@
 {
-  "name": "Bagozza - Premium E-Commerce",
-  "short_name": "Bagozza",
-  "description": "Discover premium fashion and lifestyle products at Bagozza - your destination for luxury shopping",
+  "name": "Buyursin - Магазин мужской одежды",
+  "short_name": "Buyursin",
+  "description": "Откройте для себя стильную и качественную мужскую одежду в магазине Buyursin. Ваш идеальный образ начинается здесь.",
   "theme_color": "#6B4423",
   "background_color": "#FFFFFF",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
-  "lang": "en",
+  "lang": "ru",
   "categories": ["shopping", "fashion", "lifestyle"],
   "icons": [
     {
@@ -19,7 +19,8 @@
     {
       "src": "pwa-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "pwa-512x512.png",
@@ -31,43 +32,44 @@
       "src": "apple-touch-icon-180x180.png",
       "sizes": "180x180",
       "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "apple-touch-icon-120x120.png",
+      "sizes": "120x120",
+      "type": "image/png"
     }
   ],
   "shortcuts": [
     {
-      "name": "Shop Products",
-      "short_name": "Shop",
-      "description": "Browse our premium product collection",
+      "name": "Товары",
+      "short_name": "Каталог",
+      "description": "Просмотр коллекции премиальных товаров",
       "url": "/products",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "My Cart",
-      "short_name": "Cart",
-      "description": "View your shopping cart",
+      "name": "Корзина",
+      "short_name": "Корзина",
+      "description": "Просмотр корзины покупок",
       "url": "/cart",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "My Orders",
-      "short_name": "Orders",
-      "description": "Track your orders",
+      "name": "Заказы",
+      "short_name": "Заказы",
+      "description": "Отслеживание заказов",
       "url": "/orders",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "screenshot-narrow.png",
-      "sizes": "375x812",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

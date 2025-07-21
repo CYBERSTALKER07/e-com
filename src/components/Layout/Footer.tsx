@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
               <span className="ml-2 text-xl font-bold">Buyursin</span>
             </div>
             <p className="text-gray-400 mb-4">
-              Лучший магазин мужской одежды и аксессуаров в Ташкенте.
+              {/* Лучший магазин мужской одежды и аксессуаров в Ташкенте. */}
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">

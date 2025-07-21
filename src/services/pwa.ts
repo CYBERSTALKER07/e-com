@@ -3,15 +3,213 @@ class PWAService {
   private swRegistration: ServiceWorkerRegistration | null = null;
   private isOnline = navigator.onLine;
   private updateAvailable = false;
+  private isIOSDevice = false;
+  private isStandalone = false;
 
   constructor() {
-    this.init();
+    // Detect iOS and standalone mode
+    this.isIOSDevice = this.detectIOSDevice();
+    this.isStandalone = this.detectStandaloneMode();
+    
+    // Only initialize in production or when explicitly enabled
+    if (import.meta.env.PROD || import.meta.env.VITE_PWA_ENABLED === 'true') {
+      this.init();
+    }
     this.setupNetworkListeners();
+    this.setupIOSHandlers();
   }
 
+  private detectIOSDevice(): boolean {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  }
+
+  private detectStandaloneMode(): boolean {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://')
+    );
+  }
+
+  private setupIOSHandlers() {
+    if (this.isIOSDevice) {
+      // Handle iOS viewport height issues
+      this.setupIOSViewportFix();
+      
+      // Show iOS install prompt if not standalone
+      if (!this.isStandalone) {
+        this.showIOSInstallPrompt();
+      }
+      
+      // Handle iOS safe area
+      this.setupIOSSafeArea();
+    }
+  }
+
+  private setupIOSViewportFix() {
+    // Fix for iOS viewport height issues
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(setViewportHeight, 100);
+    });
+  }
+
+  private setupIOSSafeArea() {
+    // Add iOS safe area CSS custom properties if not already present
+    const style = document.createElement('style');
+    style.textContent = `
+      @supports (padding: max(0px)) {
+        .ios-safe-area-top {
+          padding-top: max(20px, env(safe-area-inset-top));
+        }
+        
+        .ios-safe-area-bottom {
+          padding-bottom: max(20px, env(safe-area-inset-bottom));
+        }
+        
+        .ios-safe-area-left {
+          padding-left: max(0px, env(safe-area-inset-left));
+        }
+        
+        .ios-safe-area-right {
+          padding-right: max(0px, env(safe-area-inset-right));
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  private showIOSInstallPrompt() {
+    // Check if already shown recently
+    const lastShown = localStorage.getItem('ios_install_prompt_shown');
+    if (lastShown && Date.now() - parseInt(lastShown) < 7 * 24 * 60 * 60 * 1000) {
+      return; // Don't show for 7 days
+    }
+
+    setTimeout(() => {
+      const installBanner = document.createElement('div');
+      installBanner.className = 'ios-install-banner';
+      installBanner.innerHTML = `
+        <div class="ios-install-content">
+          <div class="ios-install-info">
+            <div class="ios-install-icon">📱</div>
+            <div>
+              <strong>Установите Buyursin</strong>
+              <div class="ios-install-subtitle">Нажмите <span class="share-icon">⎙</span> и "На экран «Домой»"</div>
+            </div>
+          </div>
+          <button class="ios-install-close">✕</button>
+        </div>
+      `;
+
+      installBanner.querySelector('.ios-install-close')?.addEventListener('click', () => {
+        installBanner.remove();
+        localStorage.setItem('ios_install_prompt_shown', Date.now().toString());
+      });
+
+      document.body.appendChild(installBanner);
+      this.addIOSInstallBannerStyles();
+    }, 5000); // Show after 5 seconds
+  }
+
+  private addIOSInstallBannerStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+      .ios-install-banner {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        max-width: 400px;
+        margin: 0 auto;
+        transform: translateY(100px);
+        opacity: 0;
+        animation: slideUpIOS 0.3s ease-out forwards;
+        border: 1px solid #e5e7eb;
+      }
+      
+      .ios-install-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+      }
+      
+      .ios-install-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+      }
+      
+      .ios-install-icon {
+        font-size: 24px;
+      }
+      
+      .ios-install-subtitle {
+        font-size: 14px;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+      
+      .share-icon {
+        font-weight: bold;
+        color: #6B4423;
+        background: #f3f4f6;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+      
+      .ios-install-close {
+        background: none;
+        border: none;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 16px;
+        transition: background 0.2s;
+      }
+      
+      .ios-install-close:hover {
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+      
+      @keyframes slideUpIOS {
+        to { 
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .ios-install-banner {
+          left: 16px;
+          right: 16px;
+          bottom: 16px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // PWA Service for managing service worker registration and updates
   private async init() {
     if ('serviceWorker' in navigator) {
       try {
+        // Register our custom service worker
         this.swRegistration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/'
         });
@@ -34,6 +232,13 @@ class PWAService {
         // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', (event) => {
           this.handleServiceWorkerMessage(event);
+        });
+
+        // Listen for skip waiting message
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SKIP_WAITING') {
+            window.location.reload();
+          }
         });
 
       } catch (error) {
@@ -295,7 +500,10 @@ class PWAService {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      this.showInstallPromotion(deferredPrompt);
+      // Only show for non-iOS devices
+      if (!this.isIOSDevice) {
+        this.showInstallPromotion(deferredPrompt);
+      }
     });
 
     window.addEventListener('appinstalled', () => {
@@ -482,6 +690,21 @@ class PWAService {
         badge: '/pwa-64x64.png',
         ...options
       });
+    }
+  }
+
+  // Public methods for iOS
+  public isRunningOnIOS(): boolean {
+    return this.isIOSDevice;
+  }
+
+  public isRunningStandalone(): boolean {
+    return this.isStandalone;
+  }
+
+  public showIOSInstallInstructions(): void {
+    if (this.isIOSDevice && !this.isStandalone) {
+      this.showIOSInstallPrompt();
     }
   }
 }
